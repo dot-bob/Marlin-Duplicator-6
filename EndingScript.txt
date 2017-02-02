@@ -1,0 +1,12 @@
+; Duplicator 6 / Monoprice Maker Ultimate Stop Script V2
+G92 E0 ; zero the extruded length 
+G1 E-1.5 F500 ; retract the filament to release some of the pressure
+M104 S0 ; turn off heater
+M140 S0 ; turn off bed
+M106 S0 ; turn off part fan
+G91 ; relative positioning
+G1 Z3 ; lower build plate a few mm
+G90 ; absolute positioning
+G28 X0 Y0 ; move head out of the way
+G1 Z170 F9000 ; lower build plate
+M84 ; disable stepper motors
