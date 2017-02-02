@@ -278,6 +278,12 @@ extern float current_position[NUM_AXIS];
 extern float position_shift[XYZ];
 extern float home_offset[XYZ];
 
+#if HAS_CASE_LIGHT
+  extern int case_light_brightness;
+  extern bool case_light_on;
+  void update_case_light();
+#endif
+
 #if HOTENDS > 1
   extern float hotend_offset[XYZ][HOTENDS];
 #endif

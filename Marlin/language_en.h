@@ -138,6 +138,12 @@
 #ifndef MSG_LEVEL_BED
   #define MSG_LEVEL_BED                       "Level bed"
 #endif
+#ifndef MSG_MOVING
+  #define MSG_MOVING                          "Moving..."
+#endif
+#ifndef MSG_FREE_XY
+  #define MSG_FREE_XY                         "Free XY"
+#endif
 #ifndef MSG_MOVE_X
   #define MSG_MOVE_X                          "Move X"
 #endif
@@ -257,6 +263,18 @@
 #endif
 #ifndef MSG_ESTEPS
   #define MSG_ESTEPS                          "Esteps/mm"
+#endif
+#ifndef MSG_E1STEPS
+  #define MSG_E1STEPS                         "E1steps/mm"
+#endif
+#ifndef MSG_E2STEPS
+  #define MSG_E2STEPS                         "E2steps/mm"
+#endif
+#ifndef MSG_E3STEPS
+  #define MSG_E3STEPS                         "E3steps/mm"
+#endif
+#ifndef MSG_E4STEPS
+  #define MSG_E4STEPS                         "E4steps/mm"
 #endif
 #ifndef MSG_TEMPERATURE
   #define MSG_TEMPERATURE                     "Temperature"
@@ -463,6 +481,9 @@
   #define MSG_DELTA_CALIBRATE_CENTER          "Calibrate Center"
 #endif
 
+#ifndef MSG_LOWER_BUILD
+  #define MSG_LOWER_BUILD                     "Lower Build Plate"
+#endif
 #ifndef MSG_INFO_MENU
   #define MSG_INFO_MENU                       "About Printer"
 #endif
@@ -492,6 +513,9 @@
 #endif
 #ifndef MSG_LIGHTS_OFF
   #define MSG_LIGHTS_OFF                      "Case light off"
+#endif
+#ifndef MSG_CASE_BRIGHT
+  #define MSG_CASE_BRIGHT                   "Case brightness"
 #endif
 
 #if LCD_WIDTH >= 20
@@ -541,6 +565,15 @@
 #ifndef MSG_DRIVE_STRENGTH
   #define MSG_DRIVE_STRENGTH                  "Drive Strength"
 #endif
+#ifndef MSG_DRIVE_STRENGTH_XY
+  #define MSG_DRIVE_STRENGTH_XY                 "Step Drive XY"
+#endif
+#ifndef MSG_DRIVE_STRENGTH_Z
+  #define MSG_DRIVE_STRENGTH_Z                  "Step Drive Z"
+#endif
+#ifndef MSG_DRIVE_STRENGTH_E
+  #define MSG_DRIVE_STRENGTH_E                  "Step Drive E"
+#endif
 #ifndef MSG_DAC_PERCENT
   #define MSG_DAC_PERCENT                     "Driver %"
 #endif
@@ -557,7 +590,17 @@
   #define MSG_FILAMENT_CHANGE_OPTION_EXTRUDE  "Extrude more"
 #endif
 #ifndef MSG_FILAMENT_CHANGE_OPTION_RESUME
-  #define MSG_FILAMENT_CHANGE_OPTION_RESUME   "Resume print"
+  #define MSG_FILAMENT_CHANGE_OPTION_RESUME   "Resume"
+#endif
+#ifndef MSG_PREHEAT_REQUIRED
+  #define MSG_PREHEAT_REQUIRED   "Error: Preheat Hotend"
+#endif
+
+#ifndef MSG_QUICKMENU
+  #define MSG_QUICKMENU   						"Quick Menu"
+#endif
+#ifndef MSG_MOVE_25MM
+  #define MSG_MOVE_25MM                       "Lower Build Plate 25mm"
 #endif
 
 //

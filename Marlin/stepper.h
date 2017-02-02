@@ -95,7 +95,7 @@ class Stepper {
       #ifndef PWM_MOTOR_CURRENT
         #define PWM_MOTOR_CURRENT DEFAULT_PWM_MOTOR_CURRENT
       #endif
-      static int motor_current_setting[3];
+      static unsigned long motor_current_setting[3];
     #endif
 	
   private:

@@ -357,15 +357,20 @@ void Config_Postprocess() {
       EEPROM_WRITE(dummy);
     }
 
-	#if HAS_MOTOR_CURRENT_PWM
+    #if HAS_MOTOR_CURRENT_PWM
       for (uint8_t q = 3; q--;)
 			EEPROM_WRITE(stepper.motor_current_setting[q]);
-	#else
-		 const int dummy_motor_current_setting[3] = DEFAULT_PWM_MOTOR_CURRENT;
+    #else
+		 const unsigned long dummy_motor_current_setting[3] = DEFAULT_PWM_MOTOR_CURRENT;
 		for (uint8_t q = 3; q--;)
 			EEPROM_WRITE(dummy_motor_current_setting[q]);
-	#endif
+    #endif
 	
+    #if HAS_CASE_LIGHT
+      EEPROM_WRITE(case_light_brightness);
+	  EEPROM_WRITE(case_light_on);
+    #endif
+
 	uint16_t final_checksum = eeprom_checksum,
              eeprom_size = eeprom_index;
 
@@ -555,6 +560,11 @@ void Config_Postprocess() {
 			EEPROM_READ(dummy);
 	  #endif
 	  
+      #if HAS_CASE_LIGHT
+        EEPROM_READ(case_light_brightness);
+	    EEPROM_READ(case_light_on);
+      #endif
+
       if (eeprom_checksum == stored_checksum) {
         Config_Postprocess();
         SERIAL_ECHO_START;
@@ -705,11 +715,28 @@ void Config_ResetDefault() {
     filament_size[q] = DEFAULT_NOMINAL_FILAMENT_DIA;
 
   #if HAS_MOTOR_CURRENT_PWM
-    int tmp_motor_current_setting[3]= PWM_MOTOR_CURRENT;
+    unsigned long tmp_motor_current_setting[3]= PWM_MOTOR_CURRENT;
 	for (uint8_t q = 3; q--;)
 	  stepper.motor_current_setting[q] = tmp_motor_current_setting[q];
   
-	stepper.init();
+//	stepper.init();
+
+	stepper.digipot_current(0, stepper.motor_current_setting[0]);
+	stepper.digipot_current(1, stepper.motor_current_setting[1]);
+	stepper.digipot_current(2, stepper.motor_current_setting[2]);
+
+  #endif
+
+  #if HAS_CASE_LIGHT
+    case_light_brightness = 255;
+    case_light_on =
+    #ifdef CASE_LIGHT_DEFAULT_ON
+      true
+    #else
+      false
+    #endif
+    ;
+	update_case_light();
   #endif
 	
   endstops.enable_globally(
@@ -1043,17 +1070,28 @@ void Config_ResetDefault() {
       SERIAL_ECHOLNPGM("  M200 D0");
     }
 
-  #if HAS_MOTOR_CURRENT_PWM
-    CONFIG_ECHO_START;
-    if (!forReplay) {
-      SERIAL_ECHOLNPGM("Stepper motor currents:");
+    #if HAS_MOTOR_CURRENT_PWM
       CONFIG_ECHO_START;
-    }
-    SERIAL_ECHOPAIR("  M907 X", stepper.motor_current_setting[0]);
-    SERIAL_ECHOPAIR(" Z", stepper.motor_current_setting[1]);
-    SERIAL_ECHOPAIR(" E", stepper.motor_current_setting[2]);
-    SERIAL_EOL;
-  #endif	
+      if (!forReplay) {
+        SERIAL_ECHOLNPGM("Stepper motor currents:");
+        CONFIG_ECHO_START;
+      }
+      SERIAL_ECHOPAIR("  M907 X", stepper.motor_current_setting[0]);
+      SERIAL_ECHOPAIR(" Z", stepper.motor_current_setting[1]);
+      SERIAL_ECHOPAIR(" E", stepper.motor_current_setting[2]);
+      SERIAL_EOL;
+    #endif	
+
+    #if HAS_CASE_LIGHT
+    CONFIG_ECHO_START;
+      if (!forReplay) {
+        SERIAL_ECHOLNPGM("Case Light:");
+        CONFIG_ECHO_START;
+      }
+      SERIAL_ECHOPAIR("  M355 S", case_light_on);
+      SERIAL_ECHOPAIR(" P", case_light_brightness);
+      SERIAL_EOL;
+    #endif
 
     /**
      * Auto Bed Leveling

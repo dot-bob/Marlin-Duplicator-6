@@ -406,6 +406,17 @@ float home_offset[XYZ] = { 0 };
 float soft_endstop_min[XYZ] = { X_MIN_POS, Y_MIN_POS, Z_MIN_POS },
       soft_endstop_max[XYZ] = { X_MAX_POS, Y_MAX_POS, Z_MAX_POS };
 
+#if HAS_CASE_LIGHT
+  int case_light_brightness = 255;
+  bool case_light_on =
+    #ifdef CASE_LIGHT_DEFAULT_ON
+      true
+    #else
+      false
+    #endif
+  ;
+#endif
+	  
 #if FAN_COUNT > 0
   int fanSpeeds[FAN_COUNT] = { 0 };
 #endif
@@ -526,16 +537,6 @@ static uint8_t target_extruder;
       false
     #else
       true
-    #endif
-  ;
-#endif
-
-#if ENABLED(ULTIPANEL) && HAS_CASE_LIGHT
-  bool case_light_on =
-    #if ENABLED(CASE_LIGHT_DEFAULT_ON)
-      true
-    #else
-      false
     #endif
   ;
 #endif
@@ -1747,7 +1748,7 @@ static void clean_up_after_endstop_or_probe_move() {
     float z_dest = LOGICAL_Z_POSITION(z_raise);
     if (zprobe_zoffset < 0) z_dest -= zprobe_zoffset;
 
-    if (z_dest > current_position[Z_AXIS])
+    if ((z_dest > current_position[Z_AXIS]) &&  axis_homed[Z_AXIS]) 
       do_blocking_move_to_z(z_dest);
   }
 
@@ -3488,7 +3489,7 @@ inline void gcode_G28() {
               SERIAL_ECHOLNPAIR("Raise Z (before homing) to ", destination[Z_AXIS]);
           #endif
 
-          do_blocking_move_to_z(destination[Z_AXIS]);
+          //do_blocking_move_to_z(destination[Z_AXIS]);
         }
       }
 
@@ -7255,7 +7256,7 @@ inline void gcode_M503() {
       #if HAS_BUZZER
         millis_t ms = millis();
         if (ms >= next_buzz) {
-          BUZZ(300, 2000);
+          BUZZ(10, 2000);
           next_buzz = ms + 2500; // Beep every 2.5s while waiting
         }
       #endif
@@ -7481,9 +7482,6 @@ inline void gcode_M907() {
 #endif // HAS_MICROSTEPS
 
 #if HAS_CASE_LIGHT
-
-  uint8_t case_light_brightness = 255;
-
   void update_case_light() {
     digitalWrite(CASE_LIGHT_PIN, case_light_on != INVERT_CASE_LIGHT ? HIGH : LOW);
     analogWrite(CASE_LIGHT_PIN, case_light_on != INVERT_CASE_LIGHT ? case_light_brightness : 0);
