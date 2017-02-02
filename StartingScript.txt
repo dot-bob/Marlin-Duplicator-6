@@ -1,0 +1,19 @@
+; Duplicator 6 / Monoprice Maker Ultimate Start Script V3
+M107 ; start with the fan off
+G28 ; home
+;G29 ; probe bed
+G1 Z15 F3600 ; move the platform 15mm down from home
+G0 X0 Y0 ; Rapid move X0 Y0
+G92 E0 ; zero the extruded length
+; perform wipe and prime
+G1 X8.0 Z0.0 F3600   
+G1 X10.0 Z0.2 F3600
+G1 X70 Z0.4 E9.0 F1000 ; prime
+G1 X100.0 E22 F1000 ; prime
+G1 X130 Z0.2 F9000 ; pull away wipe
+G1 X140 F9000     ; finish wipe
+G1 Z2 F1000 ; lift head before first move
+G1 X100 Y100 F5000 ; Move nozzle to center of bed
+G92 E0 ; zero extruder again
+; Place printing message on LCD screen
+M117 Printing...
