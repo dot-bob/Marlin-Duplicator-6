@@ -95,7 +95,7 @@
 #define SAFETY_TRIGGERED_PIN     28 // PIN to detect the safety circuit has triggered
 #define MAIN_VOLTAGE_MEASURE_PIN 14 // ANALOG PIN to measure the main voltage, with a 100k - 4k7 resitor divider.
 #define FIL_RUNOUT_PIN    69        // Filament Runout sensor.  NC switch with internal pull up resistors.
-				    // This is the "Analog J9" on the Wanhao/Ultiboard_2 main board.
+				    // This is the connector "Analog J9" on the Wanhao/Ultiboard_2 main board.
 
 //
 // LCD / Controller
