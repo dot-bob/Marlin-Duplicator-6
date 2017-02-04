@@ -13,6 +13,11 @@ If you are stock Duplicator 6 compile as is.  Use the Aduino Software IDE and ad
 
 Changes:
 
+Version 1.1.0-RC8 02-04-17 (proposed fixed) Version 4.2 (BC)
+- Enabled Analog connector(J9) to support a filament Run-out sensor (mechanical switch)
+- Modified sensor code in Marlin_Main.cpp to allow filament run-out support while print USB AND SD_Card
+- Increased both THERMAL_PROTECTION_BED_PERIOD and WATCH_BED_TEMP_PERIOD to 90 seconds to prevent false Thermal Run-away errors (time may need to be tweaked)
+
 Version 1.1.0-RC8 02-01-17 (Official Public Release) Version 4
 - Enabled the LCD info menu.
 - Changed the move axis menu to select the axis first and distance second.
