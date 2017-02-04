@@ -94,7 +94,7 @@
  * Thermal Protection parameters for the bed are just as above for hotends.
  */
 #if ENABLED(THERMAL_PROTECTION_BED)
-  #define THERMAL_PROTECTION_BED_PERIOD 90    // Seconds        Changed to 90seconds to help prevent false thermal runaway errors (may have to increase to 120)
+  #define THERMAL_PROTECTION_BED_PERIOD 90    // Seconds        Changed to 90 seconds to help prevent false thermal runaway errors (may have to increase to 120)
   #define THERMAL_PROTECTION_BED_HYSTERESIS 2 // Degrees Celsius
 
   /**
