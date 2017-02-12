@@ -12,11 +12,18 @@ Usage:
 If you are stock Duplicator 6 compile as is.  Use the Aduino Software IDE and add the U8glib graphics library to compile and load the firmware.
 
 Changes:
-Version 1.1.0-RC8 02-11-17 Version 5 prerelease A
+Version 1.1.0-RC8 02-11-17 Version 4.4 (RM)
 -Removed unused example configurations.
 -Add status_printf function for status line of display.
 -Added hotend name to heating status indicator.
 
+Version 1.1.0-RC8 02-05-17 (bug fix) Version 4.3 (BC)
+- Increased both THERMAL_PROTECTION_PERIOD and WATCH_TEMP_PERIOD to 90 seconds to prevent false Thermal Run-away errors (time may need to be tweaked) from the hot-end
+
+Version 1.1.0-RC8 02-04-17 (proposed fixed) Version 4.2 (BC)
+- Enabled Analog connector(J9) to support a filament Run-out sensor (mechanical switch)
+- Modified sensor code in Marlin_Main.cpp to allow filament run-out support while print USB AND SD_Card
+- Increased both THERMAL_PROTECTION_BED_PERIOD and WATCH_BED_TEMP_PERIOD to 90 seconds to prevent false Thermal Run-away errors (time may need to be tweaked)
 
 Version 1.1.0-RC8 02-01-17 (Official Public Release) Version 4
 - Enabled the LCD info menu.
