@@ -12,6 +12,11 @@ Usage:
 If you are stock Duplicator 6 compile as is.  Use the Aduino Software IDE and add the U8glib graphics library to compile and load the firmware.
 
 Changes:
+Version 1.1.0-RC8 02-11-17 Version 5 prerelease A
+-Removed unused example configurations.
+-Add status_printf function for status line of display.
+-Added hotend name to heating status indicator.
+
 
 Version 1.1.0-RC8 02-01-17 (Official Public Release) Version 4
 - Enabled the LCD info menu.

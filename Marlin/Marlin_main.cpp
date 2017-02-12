@@ -5245,7 +5245,9 @@ inline void gcode_M104() {
       }
     #endif
 
-    if (code_value_temp_abs() > thermalManager.degHotend(target_extruder)) LCD_MESSAGEPGM(MSG_HEATING);
+    if (code_value_temp_abs() > thermalManager.degHotend(target_extruder)){
+      status_printf(0,"E%i %s",target_extruder+1, MSG_HEATING);
+	}
   }
   
   #if ENABLED(AUTOTEMP)
@@ -5443,7 +5445,9 @@ inline void gcode_M109() {
       else print_job_timer.start();
     #endif
 
-    if (thermalManager.isHeatingHotend(target_extruder)) LCD_MESSAGEPGM(MSG_HEATING);
+    if (thermalManager.isHeatingHotend(target_extruder)){
+		status_printf(0,"E%i %s",target_extruder+1, MSG_HEATING);
+	}
   }
 
   #if ENABLED(AUTOTEMP)
