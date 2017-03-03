@@ -893,6 +893,8 @@
     #error "RGB_LED requires RGB_LED_R_PIN, RGB_LED_G_PIN, and RGB_LED_B_PIN."
   #elif ENABLED(BLINKM)
     #error "RGB_LED and BLINKM are currently incompatible (both use M150)."
+  #elif ENABLED(PCA9632)
+    #error "RGB_LED and PCA9632 are currently incompatible (both use M150)."
   #endif
 #endif
 

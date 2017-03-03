@@ -402,6 +402,9 @@
 #ifndef MSG_ZPROBE_ZOFFSET
   #define MSG_ZPROBE_ZOFFSET                  "Z Offset"
 #endif
+#ifndef MSG_LIVE_ADJUST_Z
+  #define MSG_LIVE_ADJUST_Z                   "Live adjust Z"
+#endif
 #ifndef MSG_BABYSTEP_X
   #define MSG_BABYSTEP_X                      "Babystep X"
 #endif

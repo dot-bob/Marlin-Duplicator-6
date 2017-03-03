@@ -174,6 +174,9 @@ uint8_t lcdDrawUpdate = LCDVIEW_CLEAR_CALL_REDRAW; // Set when the LCD needs to 
   #endif
 
 	#if ENABLED(BABYSTEPPING)
+      #if HAS_BED_PROBE
+        void lcd_babystep_zoffset();
+      #endif
 		void lcd_babystep_z();
 	#endif
 	
@@ -590,12 +593,14 @@ void kill_screen(const char* lcd_msg) {
       #if ENABLED(AUTOTEMP)
         thermalManager.autotempShutdown();
       #endif
-      wait_for_heatup = false;
+	  wait_for_heatup = false;
+#ifdef SD_STOP_AUTO_COOLDOWN
 	  #if FAN_COUNT > 0
         for (uint8_t i = 0; i < FAN_COUNT; i++) fanSpeeds[i] = 0;
       #endif
       thermalManager.disable_all_heaters();
-      lcd_setstatus(MSG_PRINT_ABORTED, true);
+#endif
+	  lcd_setstatus(MSG_PRINT_ABORTED, true);
 	  lcd_goto_screen(lcd_status_screen);
     }
 
@@ -636,13 +641,17 @@ void kill_screen(const char* lcd_msg) {
         MENU_ITEM(gcode, MSG_BLTOUCH_RESET, PSTR("M280 P" STRINGIFY(Z_ENDSTOP_SERVO_NR) " S" STRINGIFY(BLTOUCH_RESET)));
     #endif
 
-    if (planner.movesplanned() || IS_SD_PRINTING) {
-      #if ENABLED(BABYSTEPPING)
+	if (planner.movesplanned() || IS_SD_PRINTING) {
+    #if ENABLED(BABYSTEPPING)
+		  #if HAS_BED_PROBE
+		    MENU_ITEM(submenu, MSG_LIVE_ADJUST_Z, lcd_babystep_zoffset);
+      #else
       	MENU_ITEM(submenu, MSG_BABYSTEP_Z, lcd_babystep_z);
       #endif
-      MENU_ITEM(submenu, MSG_TUNE, lcd_tune_menu);
+    #endif
+    MENU_ITEM(submenu, MSG_TUNE, lcd_tune_menu);
     }
-    else {
+  	else {
   	//  ========================================================
       //  Quick Menu      MSG_QUICKMENU
       //  -->Auto Home    MSG_AUTO_HOME
@@ -657,7 +666,7 @@ void kill_screen(const char* lcd_msg) {
       #if ENABLED(DELTA_CALIBRATION_MENU)
         MENU_ITEM(submenu, MSG_DELTA_CALIBRATE, lcd_delta_calibrate_menu);
       #endif
-    }
+	}
 	
     //
     // Switch case light on/off
@@ -744,9 +753,41 @@ void kill_screen(const char* lcd_msg) {
       void lcd_babystep_x() { lcd_goto_screen(_lcd_babystep_x); babysteps_done = 0; defer_return_to_status = true; }
       void lcd_babystep_y() { lcd_goto_screen(_lcd_babystep_y); babysteps_done = 0; defer_return_to_status = true; }
     #endif
+
     void _lcd_babystep_z() { _lcd_babystep(Z_AXIS, PSTR(MSG_BABYSTEPPING_Z)); }
     void lcd_babystep_z() { lcd_goto_screen(_lcd_babystep_z); babysteps_done = 0; defer_return_to_status = true; }
+		
+    #if HAS_BED_PROBE
 
+      void _lcd_babystep_zoffset() {
+#if ENABLED(EEPROM_SETTINGS)
+        if (lcd_clicked) { defer_return_to_status = false; Config_StoreSettings(); return lcd_goto_previous_menu(); }
+#else
+        if (lcd_clicked) { defer_return_to_status = false; return lcd_goto_previous_menu(); }
+#endif
+        ENCODER_DIRECTION_NORMAL();
+        if (encoderPosition) {
+          int babystep_increment = (int32_t)encoderPosition * (BABYSTEP_MULTIPLICATOR);
+          encoderPosition = 0;
+
+          float new_zoffset = zprobe_zoffset + (babystep_increment/planner.axis_steps_per_mm[Z_AXIS]);
+          if (new_zoffset >= Z_PROBE_OFFSET_RANGE_MIN && new_zoffset <= Z_PROBE_OFFSET_RANGE_MAX)
+          {
+            lcdDrawUpdate = LCDVIEW_REDRAW_NOW;
+            
+            if (Planner::abl_enabled)
+              thermalManager.babystep_axis(Z_AXIS, babystep_increment);
+      
+            zprobe_zoffset = new_zoffset;
+          }
+        }
+        if (lcdDrawUpdate)
+          lcd_implementation_drawedit(PSTR(MSG_ZPROBE_ZOFFSET), ftostr43sign(zprobe_zoffset));
+      }
+
+      void lcd_babystep_zoffset() { lcd_goto_screen(_lcd_babystep_zoffset); defer_return_to_status = true; }
+
+    #endif // HAS_BED_PROBE
   #endif //BABYSTEPPING
 
   /**
@@ -1259,7 +1300,7 @@ void kill_screen(const char* lcd_msg) {
           LCDVIEW_CALL_NO_REDRAW
         #endif
       ;
-       if (axis_homed[X_AXIS] && axis_homed[Y_AXIS] && axis_homed[Z_AXIS])
+      if (axis_homed[X_AXIS] && axis_homed[Y_AXIS] && axis_homed[Z_AXIS])
         lcd_goto_screen(_lcd_level_bed_homing_done);
     }
 
@@ -3050,7 +3091,7 @@ void lcd_update() {
 
       #if ENABLED(REPRAPWORLD_KEYPAD)
         handle_reprapworld_keypad();
-          #endif
+            #endif
 
       bool encoderPastThreshold = (abs(encoderDiff) >= ENCODER_PULSES_PER_STEP);
       if (encoderPastThreshold || lcd_clicked) {
