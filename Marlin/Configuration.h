@@ -1413,6 +1413,9 @@
 //define BlinkM/CyzRgb Support
 //#define BLINKM
 
+//define PCA9632 Support
+#define PCA9632
+
 // Support for an RGB LED using 3 separate pins with optional PWM
 //#define RGB_LED
 #if ENABLED(RGB_LED)
@@ -1420,6 +1423,9 @@
   #define RGB_LED_G_PIN 43
   #define RGB_LED_B_PIN 35
 #endif
+
+// Enable automatic cooldown when stoping a print that was started from the SD card.
+#define SD_STOP_AUTO_COOLDOWN
 
 /*********************************************************************\
 * R/C SERVO support

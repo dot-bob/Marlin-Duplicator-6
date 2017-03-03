@@ -12,6 +12,12 @@ Usage:
 If you are stock Duplicator 6 compile as is.  Use the Aduino Software IDE and add the U8glib graphics library to compile and load the firmware.
 
 Changes:
+Version 1.1.0-RC8 02-27-17 Version 4.5 (RM)
+- Added support for the PCA9632 that drives the RGB leds behind the encoder dial.  Use gcode command M150 to set a color.
+- Added option to enable or disable the auto cooldown feature when canceling a print from the SD card.
+- Added replaced "Babystep Z" in the main menu during a print with "Live adjust Z" if using an auto leveling probe.  Live adjust Z
+  modifies the Z offset in realtime and saves the eeprom on exit.
+ 
 Version 1.1.0-RC8 02-11-17 Version 4.4 (RM)
 -Removed unused example configurations.
 -Add status_printf function for status line of display.

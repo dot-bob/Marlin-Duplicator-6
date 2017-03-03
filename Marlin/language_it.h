@@ -158,6 +158,7 @@
 #define MSG_HOME                            "Home"  // Used as MSG_HOME " " MSG_X MSG_Y MSG_Z " " MSG_FIRST
 #define MSG_FIRST                           "prima"
 #define MSG_ZPROBE_ZOFFSET                  "Z Offset"
+#define MSG_LIVE_ADJUST_Z                   "Compensazione Z"
 #define MSG_BABYSTEP_X                      "Babystep X"
 #define MSG_BABYSTEP_Y                      "Babystep Y"
 #define MSG_BABYSTEP_Z                      "Babystep Z"

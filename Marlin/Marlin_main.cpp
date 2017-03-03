@@ -259,6 +259,11 @@
   #include "Wire.h"
 #endif
 
+#if ENABLED(PCA9632)
+  #include "pca9632.h"
+  #include "Wire.h"
+#endif
+
 #if HAS_SERVOS
   #include "servo.h"
 #endif
@@ -5245,11 +5250,9 @@ inline void gcode_M104() {
       }
     #endif
 
-    if (code_value_temp_abs() > thermalManager.degHotend(target_extruder)){
-      status_printf(0,"E%i %s",target_extruder+1, MSG_HEATING);
-	}
+    if (code_value_temp_abs() > thermalManager.degHotend(target_extruder)) status_printf(0,"E%i %s",target_extruder+1, MSG_HEATING);
   }
-  
+
   #if ENABLED(AUTOTEMP)
     planner.autotemp_M104_M109();
   #endif
@@ -5445,9 +5448,7 @@ inline void gcode_M109() {
       else print_job_timer.start();
     #endif
 
-    if (thermalManager.isHeatingHotend(target_extruder)){
-		status_printf(0,"E%i %s",target_extruder+1, MSG_HEATING);
-	}
+    if (thermalManager.isHeatingHotend(target_extruder)) status_printf(0,"E%i %s",target_extruder+1, MSG_HEATING);
   }
 
   #if ENABLED(AUTOTEMP)
@@ -6111,7 +6112,7 @@ inline void gcode_M121() { endstops.enable_globally(false); }
   }
 #endif // HAVE_TMC2130DRIVER
 
-#if ENABLED(BLINKM) || ENABLED(RGB_LED)
+#if ENABLED(BLINKM) || ENABLED(RGB_LED) || ENABLED(PCA9632)
 
   void set_led_color(const uint8_t r, const uint8_t g, const uint8_t b) {
 
@@ -6120,8 +6121,10 @@ inline void gcode_M121() { endstops.enable_globally(false); }
       // This variant uses i2c to send the RGB components to the device.
       SendColors(r, g, b);
 
+    #elif ENABLED(PCA9632)
+      // update I2C LED driver
+      PCA9632_SetColor(r, g, b);
     #else
-
       // This variant uses 3 separate pins for the RGB components.
       // If the pins can do PWM then their intensity will be set.
       digitalWrite(RGB_LED_R_PIN, r ? HIGH : LOW);
@@ -6155,7 +6158,7 @@ inline void gcode_M121() { endstops.enable_globally(false); }
     );
   }
 
-#endif // BLINKM || RGB_LED
+#endif // BLINKM || RGB_LED || PCA9632
 
 /**
  * M200: Set filament diameter and set E axis units to cubic units
@@ -7132,6 +7135,12 @@ inline void gcode_M503() {
     if (code_seen('Z')) {
       float value = code_value_axis_units(Z_AXIS);
       if (Z_PROBE_OFFSET_RANGE_MIN <= value && value <= Z_PROBE_OFFSET_RANGE_MAX) {
+
+#if ENABLED(BABYSTEPPING)
+        if (Planner::abl_enabled)
+          thermalManager.babystep_axis(Z_AXIS, lround((value - zprobe_zoffset) * planner.axis_steps_per_mm[Z_AXIS]));
+#endif // BABYSTEPPING
+
         zprobe_zoffset = value;
         SERIAL_ECHO(zprobe_zoffset);
       }
@@ -8354,13 +8363,13 @@ void process_next_command() {
           break;
       #endif
 
-      #if ENABLED(BLINKM) || ENABLED(RGB_LED)
+      #if ENABLED(BLINKM) || ENABLED(RGB_LED) || ENABLED(PCA9632)
 
         case 150: // M150: Set Status LED Color
           gcode_M150();
           break;
 
-      #endif // BLINKM
+      #endif // BLINKM || RGB_LED || PCA9632
 
       #if ENABLED(MIXING_EXTRUDER)
         case 163: // M163: Set a component weight for mixing extruder

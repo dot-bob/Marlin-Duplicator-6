@@ -146,6 +146,7 @@
 #define MSG_HOME                            "Home"  // Used as MSG_HOME " " MSG_X MSG_Y MSG_Z " " MSG_FIRST
 #define MSG_FIRST                           "first"
 #define MSG_ZPROBE_ZOFFSET                  "Desfase Z"
+#define MSG_LIVE_ADJUST_Z                   "Micropaso Eje Z"
 #define MSG_BABYSTEP_X                      "Micropaso X"
 #define MSG_BABYSTEP_Y                      "Micropaso Y"
 #define MSG_BABYSTEP_Z                      "Micropaso Z"
