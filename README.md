@@ -9,6 +9,10 @@ Marlin for the Tevo Black Widow is base off Release Candidate -- Marlin 1.1.0-RC
 For the Marlin specific release notes refere to the Marlin RC brach located here: https://github.com/MarlinFirmware/Marlin/tree/RC.
 
 Duplicator 6 Specific Changes:
+Version 1.1.0-RC8 02-27-17 Version 5.0 (RM)
+- Fixed a display issue causing the display not to be initialized properly.
+- Fixed a bug in the auto level probe boudary calculation that could cause it to try to probe off of the bed.
+- Fixed a bug that could cause the printer to slow printing rate without being instructed to do so.
 
 Version 1.1.0-RC8 02-27-17 Version 4.5 (RM)
 - Added support for the PCA9632 that drives the RGB leds behind the encoder dial.  Use gcode command M150 to set a color.

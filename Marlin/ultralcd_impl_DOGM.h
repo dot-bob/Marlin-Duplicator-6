@@ -240,7 +240,7 @@ void lcd_printPGM(const char* str) {
   for (; char c = pgm_read_byte(str); ++str) lcd_print(c);
 }
 
-// Initialize or re-initializw the LCD
+// Initialize or re-initialize the LCD
 static void lcd_implementation_init() {
 
   #if PIN_EXISTS(LCD_BACKLIGHT) // Enable LCD backlight
@@ -248,7 +248,18 @@ static void lcd_implementation_init() {
   #endif
 
   #if PIN_EXISTS(LCD_RESET)
+    //perform a clean reset
+    OUT_WRITE(LCD_RESET_PIN, LOW); 
+    _delay_ms(5);
+    //Set unused pins in the 10 pin connector to GND to improve shielding of the cable (quick hack for the Duplicator 6).
+    OUT_WRITE(LCD_PINS_D4, LOW);
+    OUT_WRITE(LCD_PINS_ENABLE, LOW);
+    OUT_WRITE(LCD_PINS_D7, LOW);		
+    _delay_ms(5);
     OUT_WRITE(LCD_RESET_PIN, HIGH);
+    _delay_ms(10); // delay before we start comunicating
+	
+    u8g.begin(); // re-initialize the display
   #endif
 
   #if DISABLED(MINIPANEL) // setContrast not working for Mini Panel
