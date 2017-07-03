@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Marlin 3D Printer Firmware
  * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
@@ -62,8 +62,8 @@
  * If you get false positives for "Thermal Runaway" increase THERMAL_PROTECTION_HYSTERESIS and/or THERMAL_PROTECTION_PERIOD
  */
 #if ENABLED(THERMAL_PROTECTION_HOTENDS)
-  #define THERMAL_PROTECTION_PERIOD 40        // Seconds
-  #define THERMAL_PROTECTION_HYSTERESIS 4     // Degrees Celsius
+  #define THERMAL_PROTECTION_PERIOD 60        // Seconds
+  #define THERMAL_PROTECTION_HYSTERESIS 10    // Degrees Celsius
 
   /**
    * Whenever an M104 or M109 increases the target temperature the firmware will wait for the
@@ -82,8 +82,8 @@
  * Thermal Protection parameters for the bed are just as above for hotends.
  */
 #if ENABLED(THERMAL_PROTECTION_BED)
-  #define THERMAL_PROTECTION_BED_PERIOD 20    // Seconds
-  #define THERMAL_PROTECTION_BED_HYSTERESIS 2 // Degrees Celsius
+  #define THERMAL_PROTECTION_BED_PERIOD 60    // Seconds
+  #define THERMAL_PROTECTION_BED_HYSTERESIS 5 // Degrees Celsius
 
   /**
    * Whenever an M140 or M190 increases the target temperature the firmware will wait for the
@@ -94,7 +94,7 @@
    * If you get too many "Heating failed" errors, increase WATCH_BED_TEMP_PERIOD and/or decrease
    * WATCH_BED_TEMP_INCREASE. (WATCH_BED_TEMP_INCREASE should not be below 2.)
    */
-  #define WATCH_BED_TEMP_PERIOD 60                // Seconds
+  #define WATCH_BED_TEMP_PERIOD 180               // Seconds
   #define WATCH_BED_TEMP_INCREASE 2               // Degrees Celsius
 #endif
 
@@ -118,7 +118,7 @@
  * Also, if the temperature is set to a value below mintemp, it will not be changed by autotemp.
  * On an Ultimaker, some initial testing worked with M109 S215 B260 F1 in the start.gcode
  */
-#define AUTOTEMP
+//#define AUTOTEMP
 #if ENABLED(AUTOTEMP)
   #define AUTOTEMP_OLDWEIGHT 0.98
 #endif
@@ -240,7 +240,7 @@
 
 // If you want endstops to stay on (by default) even when not homing
 // enable this option. Override at any time with M120, M121.
-//#define ENDSTOPS_ALWAYS_ON_DEFAULT
+#define ENDSTOPS_ALWAYS_ON_DEFAULT
 
 // @section extras
 
@@ -284,7 +284,7 @@
 
   #if ENABLED(Z_DUAL_ENDSTOPS)
     #define Z2_USE_ENDSTOP _XMAX_
-    #define Z_DUAL_ENDSTOPS_ADJUSTMENT  0  // use M666 command to determine this value
+    #define Z_DUAL_ENDSTOPS_ADJUSTMENT  0  // use M666 command to determine/test this value
   #endif
 
 #endif // Z_DUAL_STEPPER_DRIVERS
@@ -335,9 +335,9 @@
 // @section homing
 
 //homing hits the endstop, then retracts by this distance, before it tries to slowly bump again:
-#define X_HOME_BUMP_MM 2
-#define Y_HOME_BUMP_MM 2
-#define Z_HOME_BUMP_MM 2 // deltas need the same for all three axis
+#define X_HOME_BUMP_MM 5
+#define Y_HOME_BUMP_MM 5
+#define Z_HOME_BUMP_MM 2
 #define HOMING_BUMP_DIVISOR {2, 2, 4}  // Re-Bump Speed Divisor (Divides the Homing Feedrate)
 //#define QUICK_HOME  //if this is defined, if both x and y are to be homed, a diagonal move will be performed initially.
 
@@ -374,8 +374,7 @@
 // @section lcd
 
 #if ENABLED(ULTIPANEL)
-  #define MANUAL_FEEDRATE_XYZ 50*60
-  #define MANUAL_FEEDRATE { MANUAL_FEEDRATE_XYZ, MANUAL_FEEDRATE_XYZ, MANUAL_FEEDRATE_XYZ, 60 } // Feedrates for manual moves along X, Y, Z, E from panel
+  #define MANUAL_FEEDRATE {50*60, 50*60, 4*60, 60} // Feedrates for manual moves along X, Y, Z, E from panel
   #define ULTIPANEL_FEEDMULTIPLY  // Comment to disable setting feedrate multiplier via encoder
 #endif
 
@@ -385,8 +384,7 @@
 #define DEFAULT_MINSEGMENTTIME        20000
 
 // If defined the movements slow down when the look ahead buffer is only half full
-// (don't use SLOWDOWN with DELTA because DELTA generates hundreds of segments per second)
-//#define SLOWDOWN
+#define SLOWDOWN
 
 // Frequency limit
 // See nophead's blog for more info
@@ -454,6 +452,9 @@
 // On the Info Screen, display XY with one decimal place when possible
 //#define LCD_DECIMAL_SMALL_XY
 
+// The timeout (in ms) to return to the status screen from sub-menus
+//#define LCD_TIMEOUT_TO_STATUS 15000
+
 #if ENABLED(SDSUPPORT)
 
   // Some RAMPS and other boards don't detect when an SD card is inserted. You can work
@@ -461,7 +462,7 @@
   // as SD_DETECT_PIN in your board's pins definitions.
   // This setting should be disabled unless you are using a push button, pulling the pin to ground.
   // Note: This is always disabled for ULTIPANEL (except ELB_FULL_GRAPHIC_CONTROLLER).
-  #define SD_DETECT_INVERTED
+  //#define SD_DETECT_INVERTED
 
   #define SD_FINISHED_STEPPERRELEASE true  //if sd support and the file is finished: disable steppers?
   #define SD_FINISHED_RELEASECOMMAND "M84 X Y Z E" // You might want to keep the z enabled so your bed stays in place.
@@ -647,7 +648,7 @@
    *
    * Set to 0 to auto-detect the ratio based on given Gcode G1 print moves.
    *
-   * Slic3r (including Průša Slic3r) produces Gcode compatible with the automatic mode.
+   * Slic3r (including Prusa Slic3r) produces Gcode compatible with the automatic mode.
    * Cura (as of this writing) may produce Gcode incompatible with the automatic mode.
    */
   #define LIN_ADVANCE_E_D_RATIO 0 // The calculated ratio (or 0) according to the formula W * H / ((D / 2) ^ 2 * PI)
@@ -669,6 +670,10 @@
   #define UBL_MESH_MAX_X (X_MAX_POS - (UBL_MESH_INSET))
   #define UBL_MESH_MIN_Y (Y_MIN_POS + UBL_MESH_INSET)
   #define UBL_MESH_MAX_Y (Y_MAX_POS - (UBL_MESH_INSET))
+
+  // If this is defined, the currently active mesh will be saved in the
+  // current slot on M500.
+  #define UBL_SAVE_ACTIVE_ON_M500
 #endif
 
 // @section extras
@@ -676,7 +681,7 @@
 //
 // G2/G3 Arc Support
 //
-#define ARC_SUPPORT               // Disable this feature to save ~3226 bytes
+//#define ARC_SUPPORT               // Disable this feature to save ~3226 bytes
 #if ENABLED(ARC_SUPPORT)
   #define MM_PER_ARC_SEGMENT  1   // Length of each arc segment
   #define N_ARC_CORRECTION   25   // Number of intertpolated segments between corrections
@@ -1259,8 +1264,8 @@
   #define USER_DESC_4 "Heat Bed/Home/Level"
   #define USER_GCODE_4 "M140 S" STRINGIFY(PREHEAT_2_TEMP_BED) "\nG28\nG29"
 
-  //#define USER_DESC_5 "Home & Info"
-  //#define USER_GCODE_5 "G28\nM503"
+  #define USER_DESC_5 "Home & Info"
+  #define USER_GCODE_5 "G28\nM503"
 #endif
 
 //===========================================================================

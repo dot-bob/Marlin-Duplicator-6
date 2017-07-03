@@ -123,8 +123,8 @@
   #define AUTOTEMP_OLDWEIGHT 0.98
 #endif
 
-//Show Temperature ADC value
-//The M105 command return, besides traditional information, the ADC value read from temperature sensors.
+// Show Temperature ADC value
+// Enable for M105 to include ADC values read from temperature sensors.
 //#define SHOW_TEMP_ADC_VALUES
 
 /**
@@ -651,7 +651,7 @@
    *
    * Set to 0 to auto-detect the ratio based on given Gcode G1 print moves.
    *
-   * Slic3r (including Prusa Slic3r) produces Gcode compatible with the automatic mode.
+   * Slic3r (including Průša Slic3r) produces Gcode compatible with the automatic mode.
    * Cura (as of this writing) may produce Gcode incompatible with the automatic mode.
    */
   #define LIN_ADVANCE_E_D_RATIO 0 // The calculated ratio (or 0) according to the formula W * H / ((D / 2) ^ 2 * PI)
@@ -1274,6 +1274,7 @@
 //===========================================================================
 //====================== I2C Position Encoder Settings ======================
 //===========================================================================
+
 /**
  *  I2C position encoders for closed loop control.
  *  Developed by Chris Barr at Aus3D.

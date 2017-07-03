@@ -45,18 +45,15 @@
     void lcd_mesh_edit_setup(float initial);
     float lcd_mesh_edit();
     void lcd_z_offset_edit_setup(float);
-    #if ENABLED(DOGLCD)
-      extern void _lcd_ubl_output_map_lcd();
-    #endif
+    extern void _lcd_ubl_output_map_lcd();
     float lcd_z_offset_edit();
   #endif
 
   extern float meshedit_done;
   extern long babysteps_done;
-  extern float probe_pt(const float &x, const float &y, bool, int);
+  extern float probe_pt(const float &lx, const float &ly, const bool, const uint8_t, const bool=true);
   extern bool set_probe_deployed(bool);
   extern void set_bed_leveling_enabled(bool);
-  extern bool ubl_lcd_map_control;
   typedef void (*screenFunc_t)();
   extern void lcd_goto_screen(screenFunc_t screen, const uint32_t encoder = 0);
 
@@ -314,7 +311,7 @@
 
     // Check for commands that require the printer to be homed
     if (axis_unhomed_error()) {
-      const int8_t p_val = parser.seen('P') && parser.has_value() ? parser.value_int() : -1;
+      const int8_t p_val = parser.intval('P', -1);
       if (p_val == 1 || p_val == 2 || p_val == 4 || parser.seen('J'))
         home_all_axes();
     }
@@ -328,7 +325,8 @@
       g29_repetition_cnt = parser.has_value() ? parser.value_int() : 1;
       if (g29_repetition_cnt >= GRID_MAX_POINTS) {
         set_all_mesh_points_to_value(NAN);
-      } else {
+      }
+      else {
         while (g29_repetition_cnt--) {
           if (cnt > 20) { cnt = 0; idle(); }
           const mesh_index_pair location = find_closest_mesh_point_of_type(REAL, g29_x_pos, g29_y_pos, USE_NOZZLE_AS_REFERENCE, NULL, false);
@@ -492,7 +490,7 @@
               return;
             }
 
-            const float height = parser.seen('H') && parser.has_value() ? parser.value_float() : Z_CLEARANCE_BETWEEN_PROBES;
+            const float height = parser.floatval('H', Z_CLEARANCE_BETWEEN_PROBES);
             manually_probe_remaining_mesh(g29_x_pos, g29_y_pos, height, g29_card_thickness, parser.seen('T'));
 
             SERIAL_PROTOCOLLNPGM("G29 P2 finished.");
@@ -1094,9 +1092,9 @@
     g29_constant = 0.0;
     g29_repetition_cnt = 0;
 
-    g29_x_flag = parser.seen('X') && parser.has_value();
+    g29_x_flag = parser.seenval('X');
     g29_x_pos = g29_x_flag ? parser.value_float() : current_position[X_AXIS];
-    g29_y_flag = parser.seen('Y') && parser.has_value();
+    g29_y_flag = parser.seenval('Y');
     g29_y_pos = g29_y_flag ? parser.value_float() : current_position[Y_AXIS];
 
     if (parser.seen('R')) {
@@ -1170,7 +1168,7 @@
       g29_constant = parser.value_float();
 
     #if ENABLED(ENABLE_LEVELING_FADE_HEIGHT)
-      if (parser.seen('F') && parser.has_value()) {
+      if (parser.seenval('F')) {
         const float fh = parser.value_float();
         if (!WITHIN(fh, 0.0, 100.0)) {
           SERIAL_PROTOCOLLNPGM("?(F)ade height for Bed Level Correction not plausible.\n");
@@ -1180,7 +1178,7 @@
       }
     #endif
 
-    g29_map_type = parser.seen('T') && parser.has_value() ? parser.value_int() : 0;
+    g29_map_type = parser.intval('T');
     if (!WITHIN(g29_map_type, 0, 2)) {
       SERIAL_PROTOCOLLNPGM("Invalid map type.\n");
       return UBL_ERR;
@@ -1454,7 +1452,7 @@
     void unified_bed_leveling::fine_tune_mesh(const float &lx, const float &ly, const bool do_ubl_mesh_map) {
       if (!parser.seen('R'))    // fine_tune_mesh() is special. If no repetition count flag is specified
         g29_repetition_cnt = 1;   // do exactly one mesh location. Otherwise use what the parser decided.
-      
+
       #if ENABLED(UBL_MESH_EDIT_MOVES_Z)
         const bool is_offset = parser.seen('H');
         const float h_offset = is_offset ? parser.value_linear_units() : Z_CLEARANCE_BETWEEN_PROBES;
@@ -1463,7 +1461,7 @@
           return;
         }
       #endif
-      
+
       mesh_index_pair location;
 
       if (!position_is_reachable_xy(lx, ly)) {
@@ -1521,7 +1519,7 @@
           idle();
         } while (!ubl_lcd_clicked());
 
-        lcd_return_to_status();
+        if (!ubl_lcd_map_control) lcd_return_to_status();
 
         // The technique used here generates a race condition for the encoder click.
         // It could get detected in lcd_mesh_edit (actually _lcd_mesh_fine_tune) or here.
@@ -1568,12 +1566,10 @@
       LCD_MESSAGEPGM(MSG_UBL_DONE_EDITING_MESH);
       SERIAL_ECHOLNPGM("Done Editing Mesh");
 
-      if (ubl_lcd_map_control) {
-        #if ENABLED(DOGLCD)
-          lcd_goto_screen(_lcd_ubl_output_map_lcd);
-        #endif
-      }
-      else lcd_return_to_status();
+      if (ubl_lcd_map_control)
+        lcd_goto_screen(_lcd_ubl_output_map_lcd);
+      else
+        lcd_return_to_status();
     }
 
   #endif // NEWPANEL

@@ -276,9 +276,7 @@
 #if ENABLED(I2C_POSITION_ENCODERS)
   #if DISABLED(BABYSTEPPING)
     #error "I2C_POSITION_ENCODERS requires BABYSTEPPING."
-  #endif
-
-  #if I2CPE_ENCODER_CNT > 5 || I2CPE_ENCODER_CNT < 1
+  #elif !WITHIN(I2CPE_ENCODER_CNT, 1, 5)
     #error "I2CPE_ENCODER_CNT must be between 1 and 5."
   #endif
 #endif
@@ -352,8 +350,19 @@
     #error "EXTRUDERS must be 1 with HEATERS_PARALLEL."
   #endif
 
+#elif ENABLED(MK2_MULTIPLEXER)
+  #error "MK2_MULTIPLEXER requires 2 or more EXTRUDERS."
 #elif ENABLED(SINGLENOZZLE)
   #error "SINGLENOZZLE requires 2 or more EXTRUDERS."
+#endif
+
+/**
+ * Sanity checking for the Průša MK2 Multiplexer
+ */
+#ifdef SNMM
+  #error "SNMM is now MK2_MULTIPLEXER. Please update your configuration."
+#elif ENABLED(MK2_MULTIPLEXER) && DISABLED(ADVANCED_PAUSE_FEATURE)
+  #error "ADVANCED_PAUSE_FEATURE is required with MK2_MULTIPLEXER."
 #endif
 
 /**
@@ -471,6 +480,8 @@ static_assert(1 >= 0
     #error "You probably want to use Max Endstops for DELTA!"
   #elif ENABLED(ENABLE_LEVELING_FADE_HEIGHT) && DISABLED(AUTO_BED_LEVELING_BILINEAR) && !UBL_DELTA
     #error "ENABLE_LEVELING_FADE_HEIGHT on DELTA requires AUTO_BED_LEVELING_BILINEAR or AUTO_BED_LEVELING_UBL."
+  #elif ENABLED(DELTA_AUTO_CALIBRATION) && !HAS_BED_PROBE
+    #error "DELTA_AUTO_CALIBRATION requires a probe: FIX_MOUNTED_PROBE, BLTOUCH, SOLENOID_PROBE, Z_PROBE_ALLEN_KEY, Z_PROBE_SLED, or Z Servo."
   #elif ABL_GRID
     #if (GRID_MAX_POINTS_X & 1) == 0 || (GRID_MAX_POINTS_Y & 1) == 0
       #error "DELTA requires GRID_MAX_POINTS_X and GRID_MAX_POINTS_Y to be odd numbers."
@@ -588,10 +599,12 @@ static_assert(1 >= 0
     #else
       #error "Auto Bed Leveling requires one of these: PROBE_MANUALLY, FIX_MOUNTED_PROBE, BLTOUCH, SOLENOID_PROBE, Z_PROBE_ALLEN_KEY, Z_PROBE_SLED, or a Z Servo."
     #endif
-  #elif ENABLED(Z_MIN_PROBE_REPEATABILITY_TEST)
-    #error "Z_MIN_PROBE_REPEATABILITY_TEST requires a probe: FIX_MOUNTED_PROBE, BLTOUCH, SOLENOID_PROBE, Z_PROBE_ALLEN_KEY, Z_PROBE_SLED, or Z Servo."
   #endif
 
+#endif
+
+#if ENABLED(Z_MIN_PROBE_REPEATABILITY_TEST) && !HAS_BED_PROBE
+  #error "Z_MIN_PROBE_REPEATABILITY_TEST requires a probe: FIX_MOUNTED_PROBE, BLTOUCH, SOLENOID_PROBE, Z_PROBE_ALLEN_KEY, Z_PROBE_SLED, or Z Servo."
 #endif
 
 /**
@@ -1073,6 +1086,9 @@ static_assert(1 >= 0
     + 1
   #endif
   #if ENABLED(REPRAP_DISCOUNT_FULL_GRAPHIC_SMART_CONTROLLER) && DISABLED(BQ_LCD_SMART_CONTROLLER)
+    + 1
+  #endif
+  #if ENABLED(LCD_FOR_MELZI)
     + 1
   #endif
   #if ENABLED(CARTESIO_UI)
