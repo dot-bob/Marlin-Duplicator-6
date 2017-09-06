@@ -1,4 +1,6 @@
----
+dist: trusty
+sudo: true
+  #
 language: c
   #
 notifications:
@@ -11,7 +13,7 @@ before_install:
   #
   # Publish the buildroot script folder
   - chmod +x ${TRAVIS_BUILD_DIR}/buildroot/bin/*
-  - ln -s ${TRAVIS_BUILD_DIR}/buildroot/bin/ ~/bin
+  - export PATH=${TRAVIS_BUILD_DIR}/buildroot/bin/:${PATH}
   #
   # Start fb X server
   - "/sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_1.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :1 -ac -screen 0 1280x1024x16"
@@ -49,6 +51,10 @@ install:
   # Install: TMC2130 Stepper Motor Controller library
   - git clone https://github.com/teemuatlut/TMC2130Stepper.git
   - sudo mv TMC2130Stepper /usr/local/share/arduino/libraries/TMC2130Stepper
+  #
+  # Install: Adafruit Neopixel library
+  - git clone https://github.com/adafruit/Adafruit_NeoPixel.git
+  - sudo mv Adafruit_NeoPixel /usr/local/share/arduino/libraries/Adafruit_NeoPixel
   #
 before_script:
   #
