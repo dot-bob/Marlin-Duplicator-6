@@ -70,4 +70,3 @@ script:
   # Build with the default configurations
   #
   - build_marlin
- 
