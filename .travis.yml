@@ -70,3 +70,13 @@ script:
   # Build with the default configurations
   #
   - build_marlin
+
+after_success:
+  - ls -lh Marlin.ino.hex
+  - upload_release Marlin.ino.hex
+  
+branches:
+  except:
+    - # Do not build tags that we create when we upload to GitHub Releases
+    - /^(?i:continuous)$/
+    
