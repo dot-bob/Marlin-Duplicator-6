@@ -31,6 +31,7 @@
 #define LANGUAGE_FR_H
 
 #define MAPPER_NON
+#define NOT_EXTENDED_ISO10646_1_5X7
 
 #define WELCOME_MSG                         MACHINE_NAME _UxGT(" prete.")
 #define MSG_BACK                            _UxGT("Retour")
@@ -222,6 +223,7 @@
 #define MSG_CONTROL_RETRACT_RECOVER         _UxGT("UnRet mm")
 #define MSG_CONTROL_RETRACT_RECOVER_SWAP    _UxGT("Ech. UnRet mm")
 #define MSG_CONTROL_RETRACT_RECOVERF        _UxGT("UnRet V")
+#define MSG_CONTROL_RETRACT_RECOVER_SWAPF   _UxGT("Ech. UnRet V")
 #define MSG_AUTORETRACT                     _UxGT("Retract. Auto.")
 #define MSG_FILAMENTCHANGE                  _UxGT("Changer filament")
 #define MSG_INIT_SDCARD                     _UxGT("Init. la carte SD")
