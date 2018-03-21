@@ -23,13 +23,15 @@
 #ifndef __UTILITY_H__
 #define __UTILITY_H__
 
+#include "types.h"
+
 void safe_delay(millis_t ms);
 
 #if ENABLED(EEPROM_SETTINGS)
   void crc16(uint16_t *crc, const void * const data, uint16_t cnt);
 #endif
 
-#if ENABLED(ULTRA_LCD)
+#if ENABLED(ULTRA_LCD) || (ENABLED(DEBUG_LEVELING_FEATURE) && (ENABLED(MESH_BED_LEVELING) || (HAS_ABL && !ABL_PLANAR)))
 
   // Convert uint8_t to string with 123 format
   char* i8tostr3(const uint8_t x);
@@ -81,6 +83,6 @@ void safe_delay(millis_t ms);
     FORCE_INLINE char *ftostr4sign(const float &x) { return itostr4sign((int)x); }
   #endif
 
-#endif // ULTRA_LCD
+#endif // ULTRA_LCD || (DEBUG_LEVELING_FEATURE && (MESH_BED_LEVELING || (HAS_ABL && !ABL_PLANAR)))
 
 #endif // __UTILITY_H__

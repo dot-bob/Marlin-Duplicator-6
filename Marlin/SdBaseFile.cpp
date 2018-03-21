@@ -339,38 +339,38 @@ int8_t SdBaseFile::lsPrintNext(uint8_t flags, uint8_t indent) {
         && DIR_IS_FILE_OR_SUBDIR(&dir)) break;
   }
   // indent for dir level
-  for (uint8_t i = 0; i < indent; i++) MYSERIAL.write(' ');
+  for (uint8_t i = 0; i < indent; i++) SERIAL_CHAR(' ');
 
   // print name
   for (uint8_t i = 0; i < 11; i++) {
     if (dir.name[i] == ' ')continue;
     if (i == 8) {
-      MYSERIAL.write('.');
+      SERIAL_CHAR('.');
       w++;
     }
-    MYSERIAL.write(dir.name[i]);
+    SERIAL_CHAR(dir.name[i]);
     w++;
   }
   if (DIR_IS_SUBDIR(&dir)) {
-    MYSERIAL.write('/');
+    SERIAL_CHAR('/');
     w++;
   }
   if (flags & (LS_DATE | LS_SIZE)) {
-    while (w++ < 14) MYSERIAL.write(' ');
+    while (w++ < 14) SERIAL_CHAR(' ');
   }
   // print modify date/time if requested
   if (flags & LS_DATE) {
-    MYSERIAL.write(' ');
+    SERIAL_CHAR(' ');
     printFatDate(dir.lastWriteDate);
-    MYSERIAL.write(' ');
+    SERIAL_CHAR(' ');
     printFatTime(dir.lastWriteTime);
   }
   // print size if requested
   if (!DIR_IS_SUBDIR(&dir) && (flags & LS_SIZE)) {
-    MYSERIAL.write(' ');
-    MYSERIAL.print(dir.fileSize);
+    SERIAL_CHAR(' ');
+    SERIAL_PROTOCOL(dir.fileSize);
   }
-  MYSERIAL.println();
+  SERIAL_EOL();
   return DIR_IS_FILE(&dir) ? 1 : 2;
 }
 
@@ -905,8 +905,8 @@ int SdBaseFile::peek() {
 
 // print uint8_t with width 2
 static void print2u(uint8_t v) {
-  if (v < 10) MYSERIAL.write('0');
-  MYSERIAL.print(v, DEC);
+  if (v < 10) SERIAL_CHAR('0');
+  SERIAL_PRINT(v, DEC);
 }
 
 /**
@@ -927,10 +927,10 @@ static void print2u(uint8_t v) {
  * \param[in] fatDate The date field from a directory entry.
  */
 void SdBaseFile::printFatDate(uint16_t fatDate) {
-  MYSERIAL.print(FAT_YEAR(fatDate));
-  MYSERIAL.write('-');
+  SERIAL_PROTOCOL(FAT_YEAR(fatDate));
+  SERIAL_CHAR('-');
   print2u(FAT_MONTH(fatDate));
-  MYSERIAL.write('-');
+  SERIAL_CHAR('-');
   print2u(FAT_DAY(fatDate));
 }
 
@@ -945,9 +945,9 @@ void SdBaseFile::printFatDate(uint16_t fatDate) {
  */
 void SdBaseFile::printFatTime(uint16_t fatTime) {
   print2u(FAT_HOUR(fatTime));
-  MYSERIAL.write(':');
+  SERIAL_CHAR(':');
   print2u(FAT_MINUTE(fatTime));
-  MYSERIAL.write(':');
+  SERIAL_CHAR(':');
   print2u(FAT_SECOND(fatTime));
 }
 
@@ -959,7 +959,7 @@ void SdBaseFile::printFatTime(uint16_t fatTime) {
 bool SdBaseFile::printName() {
   char name[FILENAME_LENGTH];
   if (!getFilename(name)) return false;
-  MYSERIAL.print(name);
+  SERIAL_PROTOCOL(name);
   return true;
 }
 
@@ -1055,32 +1055,39 @@ int8_t SdBaseFile::readDir(dir_t* dir, char* longFilename) {
   // if not a directory file or miss-positioned return an error
   if (!isDir() || (0x1F & curPosition_)) return -1;
 
-  //If we have a longFilename buffer, mark it as invalid. If we find a long filename it will be filled automaticly.
-  if (longFilename != NULL) longFilename[0] = '\0';
+  // If we have a longFilename buffer, mark it as invalid.
+  // If a long filename is found it will be filled automatically.
+  if (longFilename) longFilename[0] = '\0';
 
   while (1) {
 
     n = read(dir, sizeof(dir_t));
-    if (n != sizeof(dir_t)) return n == 0 ? 0 : -1;
+    if (n != sizeof(dir_t)) return n ? -1 : 0;
 
     // last entry if DIR_NAME_FREE
     if (dir->name[0] == DIR_NAME_FREE) return 0;
 
-    // skip empty entries and entry for .  and ..
-    if (dir->name[0] == DIR_NAME_DELETED || dir->name[0] == '.') continue;
+    // skip deleted entry and entry for .  and ..
+    if (dir->name[0] == DIR_NAME_DELETED || dir->name[0] == '.') {
+      if (longFilename) longFilename[0] = '\0';     // Invalidate erased file long name, if any
+      continue;
+    }
 
     // Fill the long filename if we have a long filename entry.
     // Long filename entries are stored before the short filename.
-    if (longFilename != NULL && DIR_IS_LONG_NAME(dir)) {
+    if (longFilename && DIR_IS_LONG_NAME(dir)) {
       vfat_t* VFAT = (vfat_t*)dir;
       // Sanity-check the VFAT entry. The first cluster is always set to zero. And the sequence number should be higher than 0
-      if (VFAT->firstClusterLow == 0 && (VFAT->sequenceNumber & 0x1F) > 0 && (VFAT->sequenceNumber & 0x1F) <= MAX_VFAT_ENTRIES) {
-        // TODO: Store the filename checksum to verify if a long-filename-unaware system modified the file table.
-        n = ((VFAT->sequenceNumber & 0x1F) - 1) * (FILENAME_LENGTH);
-        for (uint8_t i = 0; i < FILENAME_LENGTH; i++)
-          longFilename[n + i] = (i < 5) ? VFAT->name1[i] : (i < 11) ? VFAT->name2[i - 5] : VFAT->name3[i - 11];
-        // If this VFAT entry is the last one, add a NUL terminator at the end of the string
-        if (VFAT->sequenceNumber & 0x40) longFilename[n + FILENAME_LENGTH] = '\0';
+      if (VFAT->firstClusterLow == 0) {
+        const uint8_t seq = VFAT->sequenceNumber & 0x1F;
+        if (WITHIN(seq, 1, MAX_VFAT_ENTRIES)) {
+          // TODO: Store the filename checksum to verify if a long-filename-unaware system modified the file table.
+          n = (seq - 1) * (FILENAME_LENGTH);
+          for (uint8_t i = 0; i < FILENAME_LENGTH; i++)
+            longFilename[n + i] = (i < 5) ? VFAT->name1[i] : (i < 11) ? VFAT->name2[i - 5] : VFAT->name3[i - 11];
+          // If this VFAT entry is the last one, add a NUL terminator at the end of the string
+          if (VFAT->sequenceNumber & 0x40) longFilename[n + FILENAME_LENGTH] = '\0';
+        }
       }
     }
     // Return if normal file or subdirectory

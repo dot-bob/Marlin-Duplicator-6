@@ -86,7 +86,7 @@
  *   Anet Users / Skynet SW on Facebook - https://www.facebook.com/skynet3ddevelopment/
  *
  *   Many thanks to Hans Raaf (@oderwat) for developing the Anet-specific software and supporting the Anet community.
-*/
+ */
 
 #ifndef __AVR_ATmega1284P__
   #error "Oops!  Make sure you have 'Anet V1.0', 'Anet V1.0 (Optiboot)' or 'Sanguino' selected from the 'Tools -> Boards' menu."
@@ -145,10 +145,10 @@
  * LCD / Controller
  *
  * Only the following displays are supported:
- *  ANET_KEYPAD_LCD
+ *  ZONESTAR_LCD
  *  ANET_FULL_GRAPHICS_LCD
  *  REPRAP_DISCOUNT_FULL_GRAPHIC_SMART_CONTROLLER
-*/
+ */
 
 #if ENABLED(ULTRA_LCD) && ENABLED(NEWPANEL)
   #define LCD_SDSS           28
@@ -176,9 +176,15 @@
     #define BTN_EN1          11
     #define BTN_EN2          10
     #define BTN_ENC          16
-    #define ST7920_DELAY_1 DELAY_0_NOP
-    #define ST7920_DELAY_2 DELAY_1_NOP
-    #define ST7920_DELAY_3 DELAY_2_NOP
+    #ifndef ST7920_DELAY_1
+      #define ST7920_DELAY_1 DELAY_0_NOP
+    #endif
+    #ifndef ST7920_DELAY_2
+      #define ST7920_DELAY_2 DELAY_1_NOP
+    #endif
+    #ifndef ST7920_DELAY_3
+      #define ST7920_DELAY_3 DELAY_2_NOP
+    #endif
     #define STD_ENCODER_PULSES_PER_STEP 4
     #define STD_ENCODER_STEPS_PER_MENU_ITEM 1
   #endif
@@ -209,7 +215,7 @@
  * ===================== LCD PINOUTS ==================================
  * ====================================================================
  *
- *   Anet V1.0 controller           | ANET_KEYPAD_LCD   | ANET_FULL_      | RepRapDiscount Full      | Thingiverse RepRap wiring
+ *   Anet V1.0 controller           | ZONESTAR_LCD      | ANET_FULL_      | RepRapDiscount Full      | Thingiverse RepRap wiring
  *   physical   logical   alt       |                   | GRAPHICS_LCD    | Graphics Display Wiring  | http://www.thingiverse
  *     pin        pin     functions |                   |                 |                          | .com/thing:2103748
  *------------------------------------------------------------------------------------------------------------------------

@@ -22,10 +22,10 @@ before_install:
   #
 install:
   #
-  # Install arduino 1.6.10
-  - wget http://downloads-02.arduino.cc/arduino-1.6.10-linux64.tar.xz
-  - tar xf arduino-1.6.10-linux64.tar.xz
-  - sudo mv arduino-1.6.10 /usr/local/share/arduino
+  # Install arduino 1.8.5
+  - wget http://downloads-02.arduino.cc/arduino-1.8.5-linux64.tar.xz
+  - tar xf arduino-1.8.5-linux64.tar.xz
+  - sudo mv arduino-1.8.5 /usr/local/share/arduino
   - ln -s /usr/local/share/arduino/arduino ${TRAVIS_BUILD_DIR}/buildroot/bin/arduino
   #
   # Install: LiquidCrystal_I2C library
@@ -52,6 +52,10 @@ install:
   - git clone https://github.com/teemuatlut/TMC2130Stepper.git
   - sudo mv TMC2130Stepper /usr/local/share/arduino/libraries/TMC2130Stepper
   #
+  # Install: TMC2208 Stepper Motor Controller library
+  - git clone https://github.com/teemuatlut/TMC2208Stepper.git
+  - sudo mv TMC2208Stepper /usr/local/share/arduino/libraries/TMC2208Stepper
+  #
   # Install: Adafruit Neopixel library
   - git clone https://github.com/adafruit/Adafruit_NeoPixel.git
   - sudo mv Adafruit_NeoPixel /usr/local/share/arduino/libraries/Adafruit_NeoPixel
@@ -70,7 +74,7 @@ script:
   # Build with the default configurations
   #
   - build_marlin
-
+  
 after_success:
   - ls -lh Marlin.ino.hex
   - upload_release Marlin.ino.hex
@@ -79,4 +83,4 @@ branches:
   except:
     - # Do not build tags that we create when we upload to GitHub Releases
     - /^(?i:continuous)$/
-    
+

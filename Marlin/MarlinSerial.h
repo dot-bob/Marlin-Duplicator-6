@@ -21,13 +21,12 @@
  */
 
 /**
-  MarlinSerial.h - Hardware serial library for Wiring
-  Copyright (c) 2006 Nicholas Zambetti.  All right reserved.
-
-  Modified 28 September 2010 by Mark Sproul
-  Modified 14 February 2016 by Andreas Hardtung (added tx buffer)
-
-*/
+ * MarlinSerial.h - Hardware serial library for Wiring
+ * Copyright (c) 2006 Nicholas Zambetti.  All right reserved.
+ *
+ * Modified 28 September 2010 by Mark Sproul
+ * Modified 14 February 2016 by Andreas Hardtung (added tx buffer)
+ */
 
 #ifndef MARLINSERIAL_H
 #define MARLINSERIAL_H
@@ -75,28 +74,18 @@
 #define BIN 2
 #define BYTE 0
 
-#ifndef USBCON
-  // Define constants and variables for buffering incoming serial data.  We're
-  // using a ring buffer (I think), in which rx_buffer_head is the index of the
-  // location to which to write the next incoming character and rx_buffer_tail
-  // is the index of the location from which to read.
-  // 256 is the max limit due to uint8_t head and tail. Use only powers of 2. (...,16,32,64,128,256)
-  #ifndef RX_BUFFER_SIZE
-    #define RX_BUFFER_SIZE 128
-  #endif
-  #ifndef TX_BUFFER_SIZE
-    #define TX_BUFFER_SIZE 32
-  #endif
+// Define constants and variables for buffering serial data.
+// Use only 0 or powers of 2 greater than 1
+// : [0, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, ...]
+#ifndef RX_BUFFER_SIZE
+  #define RX_BUFFER_SIZE 128
+#endif
+// 256 is the max TX buffer limit due to uint8_t head and tail.
+#ifndef TX_BUFFER_SIZE
+  #define TX_BUFFER_SIZE 32
+#endif
 
-  #if ENABLED(SERIAL_XON_XOFF) && RX_BUFFER_SIZE < 1024
-    #error "XON/XOFF requires RX_BUFFER_SIZE >= 1024 for reliable transfers without drops."
-  #endif
-  #if !IS_POWER_OF_2(RX_BUFFER_SIZE) || RX_BUFFER_SIZE < 2
-    #error "RX_BUFFER_SIZE must be a power of 2 greater than 1."
-  #endif
-  #if TX_BUFFER_SIZE && (TX_BUFFER_SIZE < 2 || TX_BUFFER_SIZE > 256 || !IS_POWER_OF_2(TX_BUFFER_SIZE))
-    #error "TX_BUFFER_SIZE must be 0 or a power of 2 greater than 1."
-  #endif
+#if !(defined(__AVR__) && defined(USBCON))
 
   #if RX_BUFFER_SIZE > 256
     typedef uint16_t ring_buffer_pos_t;
@@ -110,6 +99,10 @@
 
   #if ENABLED(SERIAL_STATS_MAX_RX_QUEUED)
     extern ring_buffer_pos_t rx_max_enqueued;
+  #endif
+
+  #if ENABLED(EMERGENCY_PARSER)
+    extern bool killed_by_M112;
   #endif
 
   class MarlinSerial { //: public Stream
@@ -143,10 +136,10 @@
       static void printFloat(double, uint8_t);
 
     public:
-      static FORCE_INLINE void write(const char* str) { while (*str) write(*str++); }
-      static FORCE_INLINE void write(const uint8_t* buffer, size_t size) { while (size--) write(*buffer++); }
-      static FORCE_INLINE void print(const String& s) { for (int i = 0; i < (int)s.length(); i++) write(s[i]); }
-      static FORCE_INLINE void print(const char* str) { write(str); }
+      FORCE_INLINE static void write(const char* str) { while (*str) write(*str++); }
+      FORCE_INLINE static void write(const uint8_t* buffer, size_t size) { while (size--) write(*buffer++); }
+      FORCE_INLINE static void print(const String& s) { for (int i = 0; i < (int)s.length(); i++) write(s[i]); }
+      FORCE_INLINE static void print(const char* str) { write(str); }
 
       static void print(char, int = BYTE);
       static void print(unsigned char, int = BYTE);
@@ -170,10 +163,10 @@
 
   extern MarlinSerial customizedSerial;
 
-#endif // !USBCON
+#endif // !(__AVR__ && USBCON)
 
 // Use the UART for Bluetooth in AT90USB configurations
-#if defined(USBCON) && ENABLED(BLUETOOTH)
+#if defined(__AVR__) && defined(USBCON) && ENABLED(BLUETOOTH)
   extern HardwareSerial bluetoothSerial;
 #endif
 
