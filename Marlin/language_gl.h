@@ -149,7 +149,6 @@
 #define MSG_NO_CARD                         _UxGT("Sen tarxeta SD")
 #define MSG_DWELL                           _UxGT("En repouso...")
 #define MSG_USERWAIT                        _UxGT("A espera...")
-#define MSG_RESUMING                        _UxGT("Imprimindo...")
 #define MSG_PRINT_ABORTED                   _UxGT("Impre. cancelada")
 #define MSG_NO_MOVE                         _UxGT("Sen movemento.")
 #define MSG_KILLED                          _UxGT("PROGRAMA MORTO")
@@ -182,16 +181,14 @@
 #define MSG_ERR_MINTEMP                     _UxGT("Err: temp. min.")
 #define MSG_ERR_MAXTEMP_BED                 _UxGT("Err: MAXTEMP BED")
 #define MSG_ERR_MINTEMP_BED                 _UxGT("Err: MINTEMP BED")
-#define MSG_ERR_Z_HOMING                    _UxGT("G28 Z impedido")
+#define MSG_ERR_Z_HOMING                    MSG_HOME _UxGT(" ") MSG_X MSG_Y _UxGT(" ") MSG_FIRST
 #define MSG_HALTED                          _UxGT("SISTEMA MORTO")
 #define MSG_PLEASE_RESET                    _UxGT("Debe reiniciar!")
 #define MSG_SHORT_DAY                       _UxGT("d") // One character only
 #define MSG_SHORT_HOUR                      _UxGT("h") // One character only
 #define MSG_SHORT_MINUTE                    _UxGT("m") // One character only
 #define MSG_HEATING                         _UxGT("Quentando...")
-#define MSG_HEATING_COMPLETE                _UxGT("Xa esta quente")
-#define MSG_BED_HEATING                     _UxGT("Quentando cama")
-#define MSG_BED_DONE                        _UxGT("Cama esta quente")
+#define MSG_BED_HEATING                     _UxGT("Quentando cama...")
 #define MSG_DELTA_CALIBRATE                 _UxGT("Calibracion Delta")
 #define MSG_DELTA_CALIBRATE_X               _UxGT("Calibrar X")
 #define MSG_DELTA_CALIBRATE_Y               _UxGT("Calibrar Y")

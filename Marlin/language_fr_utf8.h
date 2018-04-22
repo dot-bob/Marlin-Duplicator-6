@@ -254,7 +254,6 @@
 #define MSG_DWELL                           _UxGT("Repos...")
 #define MSG_USERWAIT                        _UxGT("Atten. de l'util.")
 #define MSG_PRINT_PAUSED                    _UxGT("Impr. en pause")
-#define MSG_RESUMING                        _UxGT("Repri. de l'impr.")
 #define MSG_PRINT_ABORTED                   _UxGT("Impr. Annulée")
 #define MSG_NO_MOVE                         _UxGT("Moteurs bloqués.")
 #define MSG_KILLED                          _UxGT("MORT.")
@@ -295,8 +294,7 @@
 #define MSG_ERR_MINTEMP                     _UxGT("Err: TEMP. MIN")
 #define MSG_ERR_MAXTEMP_BED                 _UxGT("Err: TEMP. MAX LIT")
 #define MSG_ERR_MINTEMP_BED                 _UxGT("Err: TEMP. MIN LIT")
-#define MSG_ERR_Z_HOMING                    _UxGT("G28 Z interdit")
-
+#define MSG_ERR_Z_HOMING                    MSG_HOME _UxGT(" ") MSG_X MSG_Y _UxGT(" ") MSG_FIRST
 #define MSG_HALTED                          _UxGT("IMPR. STOPPÉE")
 #define MSG_PLEASE_RESET                    _UxGT("RàZ. SVP")
 #define MSG_SHORT_DAY                       _UxGT("j") // One character only
@@ -304,9 +302,7 @@
 #define MSG_SHORT_MINUTE                    _UxGT("m") // One character only
 
 #define MSG_HEATING                         _UxGT("En chauffe...")
-#define MSG_HEATING_COMPLETE                _UxGT("Chauffe terminée")
 #define MSG_BED_HEATING                     _UxGT("Lit en chauffe...")
-#define MSG_BED_DONE                        _UxGT("Chauffe lit terminée")
 #define MSG_DELTA_CALIBRATE                 _UxGT("Calibration Delta")
 #define MSG_DELTA_CALIBRATE_X               _UxGT("Calibrer X")
 #define MSG_DELTA_CALIBRATE_Y               _UxGT("Calibrer Y")

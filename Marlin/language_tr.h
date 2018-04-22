@@ -161,7 +161,6 @@
 #define MSG_NO_CARD                         _UxGT("SD Kart Yok")                                        // SD Kart Yok
 #define MSG_DWELL                           _UxGT("Uyku...")                                            // Uyku...
 #define MSG_USERWAIT                        _UxGT("Operatör bekleniyor...")                             // Operatör bekleniyor...
-#define MSG_RESUMING                        _UxGT("Baskı Sürdürülüyor")                                 // Baskı Sürdürülüyor
 #define MSG_PRINT_ABORTED                   _UxGT("Baskı Durduruldu")                                   // Baskı Durduruldu
 #define MSG_NO_MOVE                         _UxGT("İşlem yok.")                                         // İşlem yok.
 #define MSG_KILLED                          _UxGT("Kilitlendi. ")                                       // Kilitlendi.
@@ -194,16 +193,14 @@
 #define MSG_ERR_MINTEMP                     _UxGT("Hata: MINSICAKLIK")                                  // Hata: MINSICAKLIK
 #define MSG_ERR_MAXTEMP_BED                 _UxGT("Hata: MAXSIC. TABLA")                                // Hata: MAXSIC. TABLA
 #define MSG_ERR_MINTEMP_BED                 _UxGT("Hata: MINSIC. TABLA")                                // Hata: MINSIC. TABLA
-#define MSG_ERR_Z_HOMING                    _UxGT("G28 Z Yapılamaz")                                    // G28 Z Yapılamaz
+#define MSG_ERR_Z_HOMING                    MSG_HOME _UxGT(" ") MSG_X MSG_Y _UxGT(" ") MSG_FIRST
 #define MSG_HALTED                          _UxGT("YAZICI DURDURULDU")                                  // YAZICI DURDURULDU
 #define MSG_PLEASE_RESET                    _UxGT("Lütfen resetleyin")                                  // Lütfen resetleyin
 #define MSG_SHORT_DAY                       _UxGT("G") // One character only                            // G
 #define MSG_SHORT_HOUR                      _UxGT("S") // One character only                            // S
 #define MSG_SHORT_MINUTE                    _UxGT("D") // One character only                            // D
 #define MSG_HEATING                         _UxGT("Isınıyor...")                                        // Isınıyor...
-#define MSG_HEATING_COMPLETE                _UxGT("Isınma tamam.")                                      // Isınma tamam.
-#define MSG_BED_HEATING                     _UxGT("Tabla Isınıyor.")                                    // Tabla Isınıyor.
-#define MSG_BED_DONE                        _UxGT("Tabla hazır.")                                       // Tabla hazır.
+#define MSG_BED_HEATING                     _UxGT("Tabla Isınıyor...")                                  // Tabla Isınıyor...
 #define MSG_DELTA_CALIBRATE                 _UxGT("Delta Kalibrasyonu")                                 // Delta Kalibrasyonu
 #define MSG_DELTA_CALIBRATE_X               _UxGT("Ayarla X")                                           // Ayarla X
 #define MSG_DELTA_CALIBRATE_Y               _UxGT("Ayarla Y")                                           // Ayarla Y

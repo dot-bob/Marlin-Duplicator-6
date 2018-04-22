@@ -39,6 +39,7 @@
 #define MSG_SD_INSERTED                     _UxGT("Карта вставлена")
 #define MSG_SD_REMOVED                      _UxGT("Карта извлечена")
 #define MSG_LCD_ENDSTOPS                    _UxGT("Эндстопы") // Max length 8 characters
+#define MSG_LCD_SOFT_ENDSTOPS               _UxGT("Прогр. эндстопы")
 #define MSG_MAIN                            _UxGT("Меню")
 #define MSG_AUTOSTART                       _UxGT("Автостарт")
 #define MSG_DISABLE_STEPPERS                _UxGT("Выкл. двигатели")
@@ -252,7 +253,7 @@
 #define MSG_DWELL                           _UxGT("Сон...")
 #define MSG_USERWAIT                        _UxGT("Продолжить...")
 #define MSG_PRINT_PAUSED                    _UxGT("Печать на паузе")
-#define MSG_RESUMING                        _UxGT("Возобновление...")
+#define MSG_PRINTING                        _UxGT("Печать...")
 #define MSG_PRINT_ABORTED                   _UxGT("Печать отменена")
 #define MSG_NO_MOVE                         _UxGT("Нет движения.")
 #define MSG_KILLED                          _UxGT("УБИТО. ")
@@ -287,6 +288,7 @@
 #define MSG_BABYSTEP_Z                      _UxGT("Микрошаг Z")
 #define MSG_ENDSTOP_ABORT                   _UxGT("Сработал концевик")
 #define MSG_HEATING_FAILED_LCD              _UxGT("Разогрев не удался")
+#define MSG_HEATING_FAILED_LCD_BED          _UxGT("Разогр. стола не уд.")
 #define MSG_ERR_REDUNDANT_TEMP              _UxGT("Ошибка: Избыточная Т")
 #define MSG_THERMAL_RUNAWAY                 _UxGT("УБЕГАНИЕ ТЕПЛА")
 #define MSG_THERMAL_RUNAWAY_BED             _UxGT("УБЕГАНИЕ ТЕПЛА СТОЛА")
@@ -294,16 +296,16 @@
 #define MSG_ERR_MINTEMP                     _UxGT("Ошибка: Т мин.")
 #define MSG_ERR_MAXTEMP_BED                 _UxGT("Ошибка: Т стола макс")
 #define MSG_ERR_MINTEMP_BED                 _UxGT("Ошибка: Т стола мин.")
-#define MSG_ERR_Z_HOMING                    _UxGT("G28 Z Запрещено")
+#define MSG_ERR_Z_HOMING                    MSG_HOME _UxGT(" ") MSG_X MSG_Y _UxGT(" ") MSG_FIRST
 #define MSG_HALTED                          _UxGT("ПРИНТЕР ОСТАНОВЛЕН")
 #define MSG_PLEASE_RESET                    _UxGT("Сделайте сброс")
 #define MSG_SHORT_DAY                       _UxGT("д") // One character only
 #define MSG_SHORT_HOUR                      _UxGT("ч") // One character only
 #define MSG_SHORT_MINUTE                    _UxGT("м") // One character only
 #define MSG_HEATING                         _UxGT("Нагрев...")
-#define MSG_HEATING_COMPLETE                _UxGT("Нагрев выполнен")
-#define MSG_BED_HEATING                     _UxGT("Нагрев стола")
-#define MSG_BED_DONE                        _UxGT("Стол разогрет")
+#define MSG_COOLING                         _UxGT("Охлаждение...")
+#define MSG_BED_HEATING                     _UxGT("Нагрев стола...")
+#define MSG_BED_COOLING                     _UxGT("Охлаждение стола...")
 #define MSG_DELTA_CALIBRATE                 _UxGT("Калибровка Delta")
 #define MSG_DELTA_CALIBRATE_X               _UxGT("Калибровать X")
 #define MSG_DELTA_CALIBRATE_Y               _UxGT("Калибровать Y")
@@ -312,6 +314,7 @@
 #define MSG_DELTA_SETTINGS                  _UxGT("Настройки Delta")
 #define MSG_DELTA_AUTO_CALIBRATE            _UxGT("Авто калибровка")
 #define MSG_DELTA_HEIGHT_CALIBRATE          _UxGT("Задать высоту Delta")
+#define MSG_DELTA_Z_OFFSET_CALIBRATE        _UxGT("Задать Z-смещение")
 #define MSG_DELTA_DIAG_ROD                  _UxGT("Диаг. стержень")
 #define MSG_DELTA_HEIGHT                    _UxGT("Высота")
 #define MSG_DELTA_RADIUS                    _UxGT("Радиус")

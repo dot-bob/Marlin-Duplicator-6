@@ -249,7 +249,6 @@
 #define MSG_DWELL                           _UxGT("Lo egin...")
 #define MSG_USERWAIT                        _UxGT("Aginduak zain...")
 #define MSG_PRINT_PAUSED                    _UxGT("Inprim. geldi.")
-#define MSG_RESUMING                        _UxGT("Inprim. jarraitu.")
 #define MSG_PRINT_ABORTED                   _UxGT("Inprim. deusezta.")
 #define MSG_NO_MOVE                         _UxGT("Mugimendu gabe.")
 #define MSG_KILLED                          _UxGT("AKABATUTA. ")
@@ -290,16 +289,14 @@
 #define MSG_ERR_MINTEMP                     _UxGT("Err: Tenp Minimoa")
 #define MSG_ERR_MAXTEMP_BED                 _UxGT("Err: Ohe Tenp Max")
 #define MSG_ERR_MINTEMP_BED                 _UxGT("Err: Ohe Tenp Min")
-#define MSG_ERR_Z_HOMING                    _UxGT("G28 Z Debekatua")
+#define MSG_ERR_Z_HOMING                    MSG_HOME _UxGT(" ") MSG_X MSG_Y _UxGT(" ") MSG_FIRST
 #define MSG_HALTED                          _UxGT("INPRIMA. GELDIRIK")
 #define MSG_PLEASE_RESET                    _UxGT("Berrabia. Mesedez")
 #define MSG_SHORT_DAY                       _UxGT("d") // One character only
 #define MSG_SHORT_HOUR                      _UxGT("h") // One character only
 #define MSG_SHORT_MINUTE                    _UxGT("m") // One character only
 #define MSG_HEATING                         _UxGT("Berotzen...")
-#define MSG_HEATING_COMPLETE                _UxGT("Berotzea prest.")
-#define MSG_BED_HEATING                     _UxGT("Ohea Berotzen.")
-#define MSG_BED_DONE                        _UxGT("Ohea Berotuta.")
+#define MSG_BED_HEATING                     _UxGT("Ohea Berotzen...")
 #define MSG_DELTA_CALIBRATE                 _UxGT("Delta Kalibraketa")
 #define MSG_DELTA_CALIBRATE_X               _UxGT("Kalibratu X")
 #define MSG_DELTA_CALIBRATE_Y               _UxGT("Kalibratu Y")

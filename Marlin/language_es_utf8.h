@@ -116,9 +116,19 @@
 #define MSG_A_RETRACT                       _UxGT("Acel. retrac.")
 #define MSG_A_TRAVEL                        _UxGT("Acel. Viaje")
 #define MSG_STEPS_PER_MM                    _UxGT("Pasos/mm")
-#define MSG_XSTEPS                          _UxGT("X pasos/mm")
-#define MSG_YSTEPS                          _UxGT("Y pasos/mm")
-#define MSG_ZSTEPS                          _UxGT("Z pasos/mm")
+#if IS_SCARA
+  #define MSG_ASTEPS                        _UxGT("A pasos/mm")
+  #define MSG_BSTEPS                        _UxGT("B pasos/mm")
+  #define MSG_CSTEPS                        _UxGT("Z pasos/mm")
+#elif IS_DELTA
+  #define MSG_ASTEPS                        _UxGT("A pasos/mm")
+  #define MSG_BSTEPS                        _UxGT("B pasos/mm")
+  #define MSG_CSTEPS                        _UxGT("C pasos/mm")
+#else
+  #define MSG_ASTEPS                        _UxGT("X pasos/mm")
+  #define MSG_BSTEPS                        _UxGT("Y pasos/mm")
+  #define MSG_CSTEPS                        _UxGT("Z pasos/mm")
+#endif
 #define MSG_ESTEPS                          _UxGT("E pasos/mm")
 #define MSG_E1STEPS                         _UxGT("E1 pasos/mm")
 #define MSG_E2STEPS                         _UxGT("E2 pasos/mm")
@@ -146,7 +156,6 @@
 #define MSG_NO_CARD                         _UxGT("No hay tarjeta SD")
 #define MSG_DWELL                           _UxGT("Reposo...")
 #define MSG_USERWAIT                        _UxGT("Esperando órdenes")
-#define MSG_RESUMING                        _UxGT("Resumiendo impresión")
 #define MSG_PRINT_ABORTED                   _UxGT("Impresión cancelada")
 #define MSG_NO_MOVE                         _UxGT("Sin movimiento")
 #define MSG_KILLED                          _UxGT("Parada de emergencia")
@@ -179,16 +188,14 @@
 #define MSG_ERR_MINTEMP                     _UxGT("Error: Temp Mínima")
 #define MSG_ERR_MAXTEMP_BED                 _UxGT("Error: Temp Max Cama")
 #define MSG_ERR_MINTEMP_BED                 _UxGT("Error: Temp Min Cama")
-#define MSG_ERR_Z_HOMING                    _UxGT("G28 Z Prohibido")
+#define MSG_ERR_Z_HOMING                    MSG_HOME _UxGT(" ") MSG_X MSG_Y _UxGT(" ") MSG_FIRST
 #define MSG_HALTED                          _UxGT("IMPRESORA PARADA")
 #define MSG_PLEASE_RESET                    _UxGT("Por favor, reinicie")
 #define MSG_SHORT_DAY                       _UxGT("d") // One character only
 #define MSG_SHORT_HOUR                      _UxGT("h") // One character only
 #define MSG_SHORT_MINUTE                    _UxGT("m") // One character only
 #define MSG_HEATING                         _UxGT("Calentando...")
-#define MSG_HEATING_COMPLETE                _UxGT("Calentamiento listo")
 #define MSG_BED_HEATING                     _UxGT("Calentando Cama...")
-#define MSG_BED_DONE                        _UxGT("Cama Caliente")
 #define MSG_DELTA_CALIBRATE                 _UxGT("Calibración Delta")
 #define MSG_DELTA_CALIBRATE_X               _UxGT("Calibrar X")
 #define MSG_DELTA_CALIBRATE_Y               _UxGT("Calibrar Y")

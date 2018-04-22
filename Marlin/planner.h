@@ -126,6 +126,8 @@ typedef struct {
 
 } block_t;
 
+#define HAS_POSITION_FLOAT (ENABLED(LIN_ADVANCE) || ENABLED(SCARA_FEEDRATE_SCALING))
+
 #define BLOCK_MOD(n) ((n)&(BLOCK_BUFFER_SIZE-1))
 
 class Planner {
@@ -190,8 +192,11 @@ class Planner {
     #endif
 
     #if ENABLED(LIN_ADVANCE)
-      static float extruder_advance_K,
-                   position_float[XYZE];
+      static float extruder_advance_K;
+    #endif
+
+    #if HAS_POSITION_FLOAT
+      static float position_float[XYZE];
     #endif
 
     #if ENABLED(SKEW_CORRECTION)
@@ -290,6 +295,8 @@ class Planner {
      * Number of moves currently in the planner
      */
     FORCE_INLINE static uint8_t movesplanned() { return BLOCK_MOD(block_buffer_head - block_buffer_tail + BLOCK_BUFFER_SIZE); }
+
+    FORCE_INLINE static void clear_block_buffer() { block_buffer_head = block_buffer_tail = 0; }
 
     FORCE_INLINE static bool is_full() { return block_buffer_tail == next_block_index(block_buffer_head); }
 
@@ -413,7 +420,7 @@ class Planner {
      *  millimeters - the length of the movement, if known
      */
     static void _buffer_steps(const int32_t (&target)[XYZE]
-      #if ENABLED(LIN_ADVANCE)
+      #if HAS_POSITION_FLOAT
         , const float (&target_float)[XYZE]
       #endif
       , float fr_mm_s, const uint8_t extruder, const float &millimeters=0.0
@@ -508,14 +515,14 @@ class Planner {
     /**
      * Does the buffer have any blocks queued?
      */
-    static bool blocks_queued() { return (block_buffer_head != block_buffer_tail); }
+    static inline bool has_blocks_queued() { return (block_buffer_head != block_buffer_tail); }
 
     /**
      * "Discard" the block and "release" the memory.
      * Called when the current block is no longer needed.
      */
     FORCE_INLINE static void discard_current_block() {
-      if (blocks_queued())
+      if (has_blocks_queued())
         block_buffer_tail = BLOCK_MOD(block_buffer_tail + 1);
     }
 
@@ -524,7 +531,7 @@ class Planner {
      * Called after an interrupted move to throw away the rest of the move.
      */
     FORCE_INLINE static bool discard_continued_block() {
-      const bool discard = blocks_queued() && TEST(block_buffer[block_buffer_tail].flag, BLOCK_BIT_CONTINUED);
+      const bool discard = has_blocks_queued() && TEST(block_buffer[block_buffer_tail].flag, BLOCK_BIT_CONTINUED);
       if (discard) discard_current_block();
       return discard;
     }
@@ -535,7 +542,7 @@ class Planner {
      * WARNING: Called from Stepper ISR context!
      */
     static block_t* get_current_block() {
-      if (blocks_queued()) {
+      if (has_blocks_queued()) {
         block_t * const block = &block_buffer[block_buffer_tail];
 
         // If the block has no trapezoid calculated, it's unsafe to execute.
@@ -576,7 +583,7 @@ class Planner {
         return bbru;
       }
 
-      static void clear_block_buffer_runtime(){
+      static void clear_block_buffer_runtime() {
         CRITICAL_SECTION_START
           block_buffer_runtime_us = 0;
         CRITICAL_SECTION_END

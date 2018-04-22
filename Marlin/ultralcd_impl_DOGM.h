@@ -71,8 +71,10 @@
 #if ENABLED(USE_SMALL_INFOFONT)
   #include "dogm_font_data_6x9_marlin.h"
   #define FONT_STATUSMENU_NAME u8g_font_6x9
+  #define INFO_FONT_HEIGHT 7
 #else
   #define FONT_STATUSMENU_NAME FONT_MENU_NAME
+  #define INFO_FONT_HEIGHT 8
 #endif
 
 #include "dogm_font_data_Marlin_symbols.h"   // The Marlin special symbols
@@ -396,9 +398,9 @@ void lcd_kill_screen() {
     u8g.setPrintPos(0, h4 * 1);
     lcd_print_utf(lcd_status_message);
     u8g.setPrintPos(0, h4 * 2);
-    lcd_printPGM(PSTR(MSG_HALTED));
+    lcd_printPGM_utf(PSTR(MSG_HALTED));
     u8g.setPrintPos(0, h4 * 3);
-    lcd_printPGM(PSTR(MSG_PLEASE_RESET));
+    lcd_printPGM_utf(PSTR(MSG_PLEASE_RESET));
   } while (u8g.nextPage());
 }
 
@@ -565,7 +567,7 @@ void lcd_implementation_clear() { } // Automatically cleared by Picture Loop
     bool onpage = PAGE_CONTAINS(baseline + 1 - (DOG_CHAR_HEIGHT_EDIT), baseline);
     if (onpage) {
       u8g.setPrintPos(0, baseline);
-      lcd_printPGM(pstr);
+      lcd_printPGM_utf(pstr);
     }
 
     if (value != NULL) {
