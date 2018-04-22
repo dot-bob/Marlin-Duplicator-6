@@ -45,7 +45,8 @@
 //
 #define X_STOP_PIN         22
 #define Y_STOP_PIN         26
-#define Z_STOP_PIN         29
+//#define Z_STOP_PIN         29
+#define Z_STOP_PIN         69
 
 //
 // Steppers
@@ -103,6 +104,7 @@
 #define LED_PIN             8
 #define SAFETY_TRIGGERED_PIN     28   // PIN to detect the safety circuit has triggered
 #define MAIN_VOLTAGE_MEASURE_PIN 14   // ANALOG PIN to measure the main voltage, with a 100k - 4k7 resitor divider.
+#define SERVO0_PIN         29
 
 //
 // LCD / Controller
