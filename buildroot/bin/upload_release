@@ -2,7 +2,7 @@
 
 set +x # Do not leak information
 
-RELEASE_NAME="Auto-Build-Marlin-2.0.X" # Do not use "latest" as it is reserved by GitHub
+RELEASE_NAME="Auto-Marlin-2.0.X" # Do not use "latest" as it is reserved by GitHub
 
 if [ "$TRAVIS_EVENT_TYPE" == "pull_request" ] ; then
   echo "Release uploading disabled for pull requests, uploading to transfer.sh instead"
@@ -92,7 +92,7 @@ if [ "$TRAVIS_COMMIT" != "$tag_sha" ] ; then
   fi
 
   release_infos=$(curl -H "Authorization: token ${GITHUB_TOKEN}" \
-       --data '{"tag_name": "'"$RELEASE_NAME"'","target_commitish": "'"$TRAVIS_BRANCH"'","name": "'"Auto Build Marlin V2.0.X build"'","body": "'"$BODY"'","draft": false,"prerelease": true}' "https://api.github.com/repos/$REPO_SLUG/releases")
+       --data '{"tag_name": "'"$RELEASE_NAME"'","target_commitish": "'"$TRAVIS_BRANCH"'","name": "'"Auto Marlin V2.0.X build"'","body": "'"$BODY"'","draft": false,"prerelease": true}' "https://api.github.com/repos/$REPO_SLUG/releases")
 
   echo "$release_infos"
 

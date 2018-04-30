@@ -48,7 +48,7 @@ script:
   #
   - build_marlin_pio ${TRAVIS_BUILD_DIR} ${TEST_PLATFORM}
 after_success:
-  - ls -lh *.hex
+  - ls -lh .pioenvs/megaatmega2560/firmware.hex
   - upload_release .pioenvs/megaatmega2560/firmware.hex
   
 branches:
