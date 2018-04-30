@@ -49,7 +49,7 @@ script:
   - build_marlin_pio ${TRAVIS_BUILD_DIR} ${TEST_PLATFORM}
 after_success:
   - ls -lh *.hex
-  - upload_release firmware.hex
+  - upload_release .pioenvs/megaatmega2560/firmware.hex
   
 branches:
   except:
