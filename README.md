@@ -1,4 +1,6 @@
-# Marlin 3D Printer Firmware
+# Marlin 3D Printer Firmware for the Duplicator 6 autobuild edition
+
+For prebuilt firmware version look in the [releases](https://github.com/dot-bob/Marlin-Duplicator-6/releases) section.
 
 [![Build Status](https://travis-ci.org/MarlinFirmware/Marlin.svg?branch=RCBugFix)](https://travis-ci.org/MarlinFirmware/Marlin)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/2224/badge.svg)](https://scan.coverity.com/projects/2224)
