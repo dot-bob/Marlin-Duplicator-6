@@ -716,7 +716,7 @@
 #if ENABLED(BABYSTEPPING)
   //#define BABYSTEP_XY              // Also enable X/Y Babystepping. Not supported on DELTA!
   #define BABYSTEP_INVERT_Z false    // Change if Z babysteps should go the other way
-  #define BABYSTEP_MULTIPLICATOR 1   // Babysteps are very small. Increase for faster motion.
+  #define BABYSTEP_MULTIPLICATOR 5   // Babysteps are very small. Increase for faster motion.
   //#define BABYSTEP_ZPROBE_OFFSET   // Enable to combine M851 and Babystepping
   #define DOUBLECLICK_FOR_Z_BABYSTEPPING // Double-click on the Status Screen for Z Babystepping.
   #define DOUBLECLICK_MAX_INTERVAL 1250 // Maximum interval between clicks, in milliseconds.
@@ -1497,26 +1497,27 @@
 /**
  * User-defined menu items that execute custom GCode
  */
-//#define CUSTOM_USER_MENUS
+#define CUSTOM_USER_MENUS
 #if ENABLED(CUSTOM_USER_MENUS)
-  #define USER_SCRIPT_DONE "M117 User Script Done"
-  #define USER_SCRIPT_AUDIBLE_FEEDBACK
+  #define MSG_USER_MENU _UxGT("Quick Menu")
+  #define USER_SCRIPT_DONE "M117 Command Complete"
+  //#define USER_SCRIPT_AUDIBLE_FEEDBACK
   //#define USER_SCRIPT_RETURN  // Return to status screen after a script
 
-  #define USER_DESC_1 "Home & UBL Info"
-  #define USER_GCODE_1 "G28\nG29 W"
+  #define USER_DESC_1 "Lower 25mm"
+  #define USER_GCODE_1 "G91\nG1 Z25\nG90"
 
-  #define USER_DESC_2 "Preheat for PLA"
+  #define USER_DESC_2 "Preheat PLA"
   #define USER_GCODE_2 "M140 S" STRINGIFY(PREHEAT_1_TEMP_BED) "\nM104 S" STRINGIFY(PREHEAT_1_TEMP_HOTEND)
 
-  #define USER_DESC_3 "Preheat for ABS"
+  #define USER_DESC_3 "Preheat ABS"
   #define USER_GCODE_3 "M140 S" STRINGIFY(PREHEAT_2_TEMP_BED) "\nM104 S" STRINGIFY(PREHEAT_2_TEMP_HOTEND)
 
-  #define USER_DESC_4 "Heat Bed/Home/Level"
-  #define USER_GCODE_4 "M140 S" STRINGIFY(PREHEAT_2_TEMP_BED) "\nG28\nG29"
+  #define USER_DESC_4 "Cooldown"
+  #define USER_GCODE_4 "M140 S0\nM104 S0\nM106 S0"
 
-  #define USER_DESC_5 "Home & Info"
-  #define USER_GCODE_5 "G28\nM503"
+  //#define USER_DESC_5 "Home & Info"
+  //#define USER_GCODE_5 "G28\nM503"
 #endif
 
 /**
