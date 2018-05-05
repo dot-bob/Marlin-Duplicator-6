@@ -676,7 +676,7 @@ static void lcd_implementation_status_screen() {
 
     lcd_moveto(LCD_WIDTH - 8, 1);
     _draw_axis_label(Z_AXIS, PSTR(MSG_Z), blink);
-    lcd_put_u8str(ftostr52sp(FIXFLOAT(LOGICAL_Z_POSITION(current_position[Z_AXIS]))));
+    lcd_put_u8str(ftostr52sp(LOGICAL_Z_POSITION(current_position[Z_AXIS])));
 
     #if HAS_LEVELING && !TEMP_SENSOR_BED
       lcd_put_wchar(planner.leveling_active || blink ? '_' : ' ');
@@ -1065,10 +1065,10 @@ static void lcd_implementation_status_screen() {
          * Show X and Y positions
          */
         _XLABEL(_PLOT_X, 0);
-        lcd_put_u8str(ftostr32(LOGICAL_X_POSITION(pgm_read_float(&ubl._mesh_index_to_xpos[x]))));
+        lcd_put_u8str(ftostr52(LOGICAL_X_POSITION(pgm_read_float(&ubl._mesh_index_to_xpos[x]))));
 
         _YLABEL(_LCD_W_POS, 0);
-        lcd_put_u8str(ftostr32(LOGICAL_Y_POSITION(pgm_read_float(&ubl._mesh_index_to_ypos[inverted_y]))));
+        lcd_put_u8str(ftostr52(LOGICAL_Y_POSITION(pgm_read_float(&ubl._mesh_index_to_ypos[inverted_y]))));
 
         lcd_moveto(_PLOT_X, 0);
 
@@ -1301,9 +1301,9 @@ static void lcd_implementation_status_screen() {
          * Show all values at right of screen
          */
         _XLABEL(_LCD_W_POS, 1);
-        lcd_put_u8str(ftostr32(LOGICAL_X_POSITION(pgm_read_float(&ubl._mesh_index_to_xpos[x]))));
+        lcd_put_u8str(ftostr52(LOGICAL_X_POSITION(pgm_read_float(&ubl._mesh_index_to_xpos[x]))));
         _YLABEL(_LCD_W_POS, 2);
-        lcd_put_u8str(ftostr32(LOGICAL_Y_POSITION(pgm_read_float(&ubl._mesh_index_to_ypos[inverted_y]))));
+        lcd_put_u8str(ftostr52(LOGICAL_Y_POSITION(pgm_read_float(&ubl._mesh_index_to_ypos[inverted_y]))));
 
         /**
          * Show the location value

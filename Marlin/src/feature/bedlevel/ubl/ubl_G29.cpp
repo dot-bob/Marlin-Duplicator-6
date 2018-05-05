@@ -41,7 +41,7 @@
   #include "../../../feature/bedlevel/bedlevel.h"
   #include "../../../libs/least_squares_fit.h"
 
-#include "../../../feature/Max7219_Debug_LEDs.h"
+  #include "../../../feature/Max7219_Debug_LEDs.h"
 
   #include <math.h>
 
@@ -53,9 +53,6 @@
     void lcd_return_to_status();
     void _lcd_ubl_output_map_lcd();
   #endif
-
-  extern float meshedit_done;
-  extern long babysteps_done;
 
   #define SIZE_OF_LITTLE_RAISE 1
   #define BIG_RAISE_NOT_NEEDED 0
@@ -544,7 +541,7 @@
           #endif
           break;
 
-        case 5: adjust_mesh_to_mean(g29_constant); break;
+        case 5: adjust_mesh_to_mean(g29_c_flag, g29_constant); break;
 
         case 6: shift_mesh_height(); break;
       }
@@ -634,7 +631,7 @@
     return;
   }
 
-  void unified_bed_leveling::adjust_mesh_to_mean(const float value) {
+  void unified_bed_leveling::adjust_mesh_to_mean(const bool cflag, const float value) {
     float sum = 0.0;
     int n = 0;
     for (uint8_t x = 0; x < GRID_MAX_POINTS_X; x++)
@@ -665,7 +662,7 @@
     SERIAL_ECHO_F(sigma, 6);
     SERIAL_EOL();
 
-    if (g29_c_flag)
+    if (cflag)
       for (uint8_t x = 0; x < GRID_MAX_POINTS_X; x++)
         for (uint8_t y = 0; y < GRID_MAX_POINTS_Y; y++)
           if (!isnan(z_values[x][y]))
@@ -756,7 +753,7 @@
 
       STOW_PROBE();
 
-      #if Z_AFTER_PROBING
+      #ifdef Z_AFTER_PROBING
         move_z_after_probing();
       #endif
 
@@ -1081,7 +1078,7 @@
       SERIAL_EOL();
     #endif
 
-    adjust_mesh_to_mean(g29_constant);
+    adjust_mesh_to_mean(g29_c_flag, g29_constant);
 
     #if HAS_BED_PROBE
       SERIAL_PROTOCOLPGM("zprobe_zoffset: ");
@@ -1498,6 +1495,8 @@
   }
 
   #if HAS_BED_PROBE
+
+    #include "../../../libs/vector_3.h"
 
     void unified_bed_leveling::tilt_mesh_based_on_probed_grid(const bool do_3_pt_leveling) {
       constexpr int16_t x_min = max(MIN_PROBE_X, MESH_MIN_X),
