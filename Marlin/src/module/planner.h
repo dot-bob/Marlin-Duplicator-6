@@ -57,14 +57,18 @@ enum BlockFlagBit : char {
   BLOCK_BIT_BUSY,
 
   // The block is segment 2+ of a longer move
-  BLOCK_BIT_CONTINUED
+  BLOCK_BIT_CONTINUED,
+
+  // Sync the stepper counts from the block
+  BLOCK_BIT_SYNC_POSITION
 };
 
 enum BlockFlag : char {
   BLOCK_FLAG_RECALCULATE          = _BV(BLOCK_BIT_RECALCULATE),
   BLOCK_FLAG_NOMINAL_LENGTH       = _BV(BLOCK_BIT_NOMINAL_LENGTH),
   BLOCK_FLAG_BUSY                 = _BV(BLOCK_BIT_BUSY),
-  BLOCK_FLAG_CONTINUED            = _BV(BLOCK_BIT_CONTINUED)
+  BLOCK_FLAG_CONTINUED            = _BV(BLOCK_BIT_CONTINUED),
+  BLOCK_FLAG_SYNC_POSITION        = _BV(BLOCK_BIT_SYNC_POSITION)
 };
 
 /**
@@ -400,19 +404,24 @@ class Planner {
 
     #endif // SKEW_CORRECTION
 
-    #if PLANNER_LEVELING
-
-      #define ARG_X float rx
-      #define ARG_Y float ry
-      #define ARG_Z float rz
+    #if PLANNER_LEVELING || HAS_UBL_AND_CURVES
 
       /**
        * Apply leveling to transform a cartesian position
        * as it will be given to the planner and steppers.
        */
       static void apply_leveling(float &rx, float &ry, float &rz);
-      static void apply_leveling(float (&raw)[XYZ]) { apply_leveling(raw[X_AXIS], raw[Y_AXIS], raw[Z_AXIS]); }
-      static void unapply_leveling(float raw[XYZ]);
+      FORCE_INLINE static void apply_leveling(float (&raw)[XYZ]) { apply_leveling(raw[X_AXIS], raw[Y_AXIS], raw[Z_AXIS]); }
+
+      #if PLANNER_LEVELING
+
+        #define ARG_X float rx
+        #define ARG_Y float ry
+        #define ARG_Z float rz
+
+        static void unapply_leveling(float raw[XYZ]);
+
+      #endif
 
     #else
 
@@ -421,6 +430,20 @@ class Planner {
       #define ARG_Z const float &rz
 
     #endif
+
+
+    /**
+     * Planner::get_next_free_block
+     *
+     * - Get the next head index (passed by reference)
+     * - Wait for a space to open up in the planner
+     * - Return the head block
+     */
+    FORCE_INLINE static block_t* get_next_free_block(uint8_t &next_buffer_head) {
+      next_buffer_head = next_block_index(block_buffer_head);
+      while (block_buffer_tail == next_buffer_head) idle(); // while (is_full)
+      return &block_buffer[block_buffer_head];
+    }
 
     /**
      * Planner::_buffer_steps
@@ -438,6 +461,12 @@ class Planner {
       #endif
       , float fr_mm_s, const uint8_t extruder, const float &millimeters=0.0
     );
+
+    /**
+     * Planner::buffer_sync_block
+     * Add a block to the buffer that just updates the position
+     */
+    static void buffer_sync_block();
 
     /**
      * Planner::buffer_segment
@@ -518,7 +547,7 @@ class Planner {
     static void set_position_mm_kinematic(const float (&cart)[XYZE]);
     static void set_position_mm(const AxisEnum axis, const float &v);
     FORCE_INLINE static void set_z_position_mm(const float &z) { set_position_mm(Z_AXIS, z); }
-    FORCE_INLINE static void set_e_position_mm(const float &e) { set_position_mm(AxisEnum(E_AXIS), e); }
+    FORCE_INLINE static void set_e_position_mm(const float &e) { set_position_mm(E_AXIS, e); }
 
     /**
      * Sync from the stepper positions. (e.g., after an interrupted move)
@@ -528,7 +557,7 @@ class Planner {
     /**
      * Does the buffer have any blocks queued?
      */
-    static bool has_blocks_queued() { return (block_buffer_head != block_buffer_tail); }
+    FORCE_INLINE static bool has_blocks_queued() { return (block_buffer_head != block_buffer_tail); }
 
     /**
      * "Discard" the block and "release" the memory.
