@@ -129,7 +129,6 @@ static UnwResult UnwTabStateInit(const UnwindCallbacks *cb, UnwTabState *ucb, ui
  */
 static UnwResult UnwTabExecuteInstructions(const UnwindCallbacks *cb, UnwTabState *ucb) {
 
-  UnwResult err;
   int instruction;
   uint32_t mask;
   uint32_t reg;
@@ -186,7 +185,7 @@ static UnwResult UnwTabExecuteInstructions(const UnwindCallbacks *cb, UnwTabStat
       /* pop r4-r[4+nnn] or pop r4-r[4+nnn], r14*/
       vsp = ucb->vrs[13];
 
-      for (reg = 4; reg <= (instruction & 0x07) + 4; ++reg) {
+      for (reg = 4; reg <= uint32_t((instruction & 0x07) + 4); ++reg) {
         uint32_t v;
         if (!cb->readW(vsp,&v))
           return UNWIND_DREAD_W_FAIL;
@@ -439,5 +438,4 @@ UnwResult UnwindByTableStart(UnwindFrame* frame, const UnwindCallbacks *cb, void
   return err;
 }
 
-#endif
-
+#endif // __arm__ || __thumb__

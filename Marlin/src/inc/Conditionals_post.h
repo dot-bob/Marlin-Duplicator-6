@@ -35,6 +35,16 @@
   || MB(SCOOVO_X9H)                     \
 )
 
+#ifdef TEENSYDUINO
+  #undef max
+  #define max(a,b) ((a)>(b)?(a):(b))
+  #undef min
+  #define min(a,b) ((a)<(b)?(a):(b))
+
+  #undef NOT_A_PIN    // Override Teensyduino legacy CapSense define work-around
+  #define NOT_A_PIN 0 // For PINS_DEBUGGING
+#endif
+
 #define IS_SCARA (ENABLED(MORGAN_SCARA) || ENABLED(MAKERARM_SCARA))
 #define IS_KINEMATIC (ENABLED(DELTA) || IS_SCARA)
 #define IS_CARTESIAN !IS_KINEMATIC
@@ -205,44 +215,11 @@
   #define DEFAULT_KEEPALIVE_INTERVAL 2
 #endif
 
-#ifdef CPU_32_BIT
-  /**
-   * Hidden options for developer
-   */
-  // Double stepping starts at STEP_DOUBLER_FREQUENCY + 1, quad stepping starts at STEP_DOUBLER_FREQUENCY * 2 + 1
-  #ifndef STEP_DOUBLER_FREQUENCY
-    #if ENABLED(LIN_ADVANCE)
-      #define STEP_DOUBLER_FREQUENCY 60000 // Hz
-    #else
-      #define STEP_DOUBLER_FREQUENCY 80000 // Hz
-    #endif
-  #endif
-  // Disable double / quad stepping
-  //#define DISABLE_MULTI_STEPPING
-#endif
-
 /**
  * Provide a MAX_AUTORETRACT for older configs
  */
 #if ENABLED(FWRETRACT) && !defined(MAX_AUTORETRACT)
   #define MAX_AUTORETRACT 99
-#endif
-
-/**
- * MAX_STEP_FREQUENCY differs for TOSHIBA
- */
-#if ENABLED(CONFIG_STEPPERS_TOSHIBA)
-  #ifdef CPU_32_BIT
-    #define MAX_STEP_FREQUENCY STEP_DOUBLER_FREQUENCY // Max step frequency for Toshiba Stepper Controllers, 96kHz is close to maximum for an Arduino Due
-  #else
-    #define MAX_STEP_FREQUENCY 10000 // Max step frequency for Toshiba Stepper Controllers
-  #endif
-#else
-  #ifdef CPU_32_BIT
-    #define MAX_STEP_FREQUENCY (STEP_DOUBLER_FREQUENCY * 4) // Max step frequency for the Due is approx. 330kHz
-  #else
-    #define MAX_STEP_FREQUENCY 40000 // Max step frequency for Ultimaker (5000 pps / half step)
-  #endif
 #endif
 
 // MS1 MS2 Stepper Driver Microstepping mode table
@@ -329,9 +306,9 @@
 #if TEMP_SENSOR_1 == -4
   #define HEATER_1_USES_AD8495
 #elif TEMP_SENSOR_1 == -3
-  #error "MAX31855 Thermocouples not supported for TEMP_SENSOR_1"
+  #error "MAX31855 Thermocouples (-3) not supported for TEMP_SENSOR_1."
 #elif TEMP_SENSOR_1 == -2
-  #error "MAX6675 Thermocouples not supported for TEMP_SENSOR_1"
+  #error "MAX6675 Thermocouples (-2) not supported for TEMP_SENSOR_1."
 #elif TEMP_SENSOR_1 == -1
   #define HEATER_1_USES_AD595
 #elif TEMP_SENSOR_1 == 0
@@ -345,9 +322,9 @@
 #if TEMP_SENSOR_2 == -4
   #define HEATER_2_USES_AD8495
 #elif TEMP_SENSOR_2 == -3
-  #error "MAX31855 Thermocouples not supported for TEMP_SENSOR_2"
+  #error "MAX31855 Thermocouples (-3) not supported for TEMP_SENSOR_2."
 #elif TEMP_SENSOR_2 == -2
-  #error "MAX6675 Thermocouples not supported for TEMP_SENSOR_2"
+  #error "MAX6675 Thermocouples (-2) not supported for TEMP_SENSOR_2."
 #elif TEMP_SENSOR_2 == -1
   #define HEATER_2_USES_AD595
 #elif TEMP_SENSOR_2 == 0
@@ -361,9 +338,9 @@
 #if TEMP_SENSOR_3 == -4
   #define HEATER_3_USES_AD8495
 #elif TEMP_SENSOR_3 == -3
-  #error "MAX31855 Thermocouples not supported for TEMP_SENSOR_3"
+  #error "MAX31855 Thermocouples (-3) not supported for TEMP_SENSOR_3."
 #elif TEMP_SENSOR_3 == -2
-  #error "MAX6675 Thermocouples not supported for TEMP_SENSOR_3"
+  #error "MAX6675 Thermocouples (-2) not supported for TEMP_SENSOR_3."
 #elif TEMP_SENSOR_3 == -1
   #define HEATER_3_USES_AD595
 #elif TEMP_SENSOR_3 == 0
@@ -377,9 +354,9 @@
 #if TEMP_SENSOR_4 == -4
   #define HEATER_4_USES_AD8495
 #elif TEMP_SENSOR_4 == -3
-  #error "MAX31855 Thermocouples not supported for TEMP_SENSOR_4"
+  #error "MAX31855 Thermocouples (-3) not supported for TEMP_SENSOR_4."
 #elif TEMP_SENSOR_4 == -2
-  #error "MAX6675 Thermocouples not supported for TEMP_SENSOR_4"
+  #error "MAX6675 Thermocouples (-2) not supported for TEMP_SENSOR_4."
 #elif TEMP_SENSOR_4 == -1
   #define HEATER_4_USES_AD595
 #elif TEMP_SENSOR_4 == 0
@@ -391,43 +368,40 @@
 #endif
 
 #if TEMP_SENSOR_BED == -4
-  #define BED_USES_AD8495
+  #define HEATER_BED_USES_AD8495
 #elif TEMP_SENSOR_BED == -3
-  #error "MAX31855 Thermocouples not supported for TEMP_SENSOR_BED"
+  #error "MAX31855 Thermocouples (-3) not supported for TEMP_SENSOR_BED."
 #elif TEMP_SENSOR_BED == -2
-  #error "MAX6675 Thermocouples not supported for TEMP_SENSOR_BED"
+  #error "MAX6675 Thermocouples (-2) not supported for TEMP_SENSOR_BED."
 #elif TEMP_SENSOR_BED == -1
-  #define BED_USES_AD595
+  #define HEATER_BED_USES_AD595
 #elif TEMP_SENSOR_BED == 0
   #undef BED_MINTEMP
   #undef BED_MAXTEMP
 #elif TEMP_SENSOR_BED > 0
   #define THERMISTORBED TEMP_SENSOR_BED
-  #define BED_USES_THERMISTOR
+  #define HEATER_BED_USES_THERMISTOR
 #endif
 
 #if TEMP_SENSOR_CHAMBER == -4
-  #define CHAMBER_USES_AD8495
+  #define HEATER_CHAMBER_USES_AD8495
 #elif TEMP_SENSOR_CHAMBER == -3
-  #error "MAX31855 Thermocouples not supported for TEMP_SENSOR_CHAMBER"
+  #error "MAX31855 Thermocouples (-3) not supported for TEMP_SENSOR_CHAMBER."
 #elif TEMP_SENSOR_CHAMBER == -2
-  #error "MAX6675 Thermocouples not supported for TEMP_SENSOR_CHAMBER"
+  #error "MAX6675 Thermocouples (-2) not supported for TEMP_SENSOR_CHAMBER."
 #elif TEMP_SENSOR_CHAMBER == -1
-  #define CHAMBER_USES_AD595
+  #define HEATER_CHAMBER_USES_AD595
 #elif TEMP_SENSOR_CHAMBER > 0
   #define THERMISTORCHAMBER TEMP_SENSOR_CHAMBER
-  #define CHAMBER_USES_THERMISTOR
+  #define HEATER_CHAMBER_USES_THERMISTOR
 #endif
 
-#define HEATER_USES_AD8495 (ENABLED(HEATER_0_USES_AD8495) || ENABLED(HEATER_1_USES_AD8495) || ENABLED(HEATER_2_USES_AD8495) || ENABLED(HEATER_3_USES_AD8495) || ENABLED(HEATER_4_USES_AD8495))
-
-#ifdef __SAM3X8E__
-  #define HEATER_USES_AD595 (ENABLED(HEATER_0_USES_AD595) || ENABLED(HEATER_1_USES_AD595) || ENABLED(HEATER_2_USES_AD595) || ENABLED(HEATER_3_USES_AD595) || ENABLED(HEATER_4_USES_AD595))
-#endif
+#define HOTEND_USES_THERMISTOR (ENABLED(HEATER_0_USES_THERMISTOR) || ENABLED(HEATER_1_USES_THERMISTOR) || ENABLED(HEATER_2_USES_THERMISTOR) || ENABLED(HEATER_3_USES_THERMISTOR) || ENABLED(HEATER_4_USES_THERMISTOR))
 
 /**
  * Default hotend offsets, if not defined
  */
+#define HAS_HOTEND_OFFSET_Z (HOTENDS > 1 && (ENABLED(DUAL_X_CARRIAGE) || ENABLED(SWITCHING_NOZZLE) || ENABLED(PARKING_EXTRUDER)))
 #if HOTENDS > 1
   #ifndef HOTEND_OFFSET_X
     #define HOTEND_OFFSET_X { 0 } // X offsets for each extruder
@@ -435,7 +409,7 @@
   #ifndef HOTEND_OFFSET_Y
     #define HOTEND_OFFSET_Y { 0 } // Y offsets for each extruder
   #endif
-  #if !defined(HOTEND_OFFSET_Z) && (ENABLED(DUAL_X_CARRIAGE) || ENABLED(SWITCHING_NOZZLE))
+  #if HAS_HOTEND_OFFSET_Z && !defined(HOTEND_OFFSET_Z)
     #define HOTEND_OFFSET_Z { 0 }
   #endif
 #endif
@@ -773,9 +747,9 @@
 #define HAS_Z2_MAX (PIN_EXISTS(Z2_MAX))
 #define HAS_Z_MIN_PROBE_PIN (PIN_EXISTS(Z_MIN_PROBE))
 
-// Thermistors
-#define HAS_ADC_TEST(P) (PIN_EXISTS(TEMP_##P) && TEMP_SENSOR_##P != 0 && TEMP_SENSOR_##P > -2)
-#define HAS_TEMP_ADC_0 (HAS_ADC_TEST(0) && DISABLED(HEATER_0_USES_MAX6675))
+// ADC Temp Sensors (Thermistor or Thermocouple with amplifier ADC interface)
+#define HAS_ADC_TEST(P) (PIN_EXISTS(TEMP_##P) && TEMP_SENSOR_##P != 0 && DISABLED(HEATER_##P##_USES_MAX6675))
+#define HAS_TEMP_ADC_0 HAS_ADC_TEST(0)
 #define HAS_TEMP_ADC_1 HAS_ADC_TEST(1)
 #define HAS_TEMP_ADC_2 HAS_ADC_TEST(2)
 #define HAS_TEMP_ADC_3 HAS_ADC_TEST(3)
@@ -972,6 +946,23 @@
  * Part Cooling fan multipliexer
  */
 #define HAS_FANMUX PIN_EXISTS(FANMUX0)
+
+/**
+ * MIN/MAX fan PWM scaling
+ */
+#ifndef FAN_MIN_PWM
+  #define FAN_MIN_PWM 0
+#endif
+#ifndef FAN_MAX_PWM
+  #define FAN_MAX_PWM 255
+#endif
+#if FAN_MIN_PWM < 0 || FAN_MIN_PWM > 255
+  #error "FAN_MIN_PWM must be a value from 0 to 255."
+#elif FAN_MAX_PWM < 0 || FAN_MAX_PWM > 255
+  #error "FAN_MAX_PWM must be a value from 0 to 255."
+#elif FAN_MIN_PWM > FAN_MAX_PWM
+  #error "FAN_MIN_PWM must be less than or equal to FAN_MAX_PWM."
+#endif
 
 /**
  * Bed Probe dependencies
@@ -1322,15 +1313,6 @@
   #define MANUAL_PROBE_HEIGHT Z_HOMING_HEIGHT
 #endif
 
-// Stepper pulse duration, in cycles
-#define STEP_PULSE_CYCLES ((MINIMUM_STEPPER_PULSE) * CYCLES_PER_MICROSECOND)
-#ifdef CPU_32_BIT
-  // Add additional delay for between direction signal and pulse signal of stepper
-  #ifndef STEPPER_DIRECTION_DELAY
-    #define STEPPER_DIRECTION_DELAY 0 // time in microseconds
-  #endif
-#endif
-
 #ifndef __SAM3X8E__ //todo: hal: broken hal encapsulation
   #undef UI_VOLTAGE_LEVEL
   #undef RADDS_DISPLAY
@@ -1378,23 +1360,12 @@
   #undef LROUND
   #undef FMOD
   #define ATAN2(y, x) atan2f(y, x)
-  #define FABS(x) fabsf(x)
   #define POW(x, y) powf(x, y)
   #define SQRT(x) sqrtf(x)
   #define CEIL(x) ceilf(x)
   #define FLOOR(x) floorf(x)
   #define LROUND(x) lroundf(x)
   #define FMOD(x, y) fmodf(x, y)
-#endif
-
-#ifdef TEENSYDUINO
-  #undef max
-  #define max(a,b) ((a)>(b)?(a):(b))
-  #undef min
-  #define min(a,b) ((a)<(b)?(a):(b))
-
-  #undef NOT_A_PIN    // Override Teensyduino legacy CapSense define work-around
-  #define NOT_A_PIN 0 // For PINS_DEBUGGING
 #endif
 
 // Number of VFAT entries used. Each entry has 13 UTF-16 characters

@@ -122,7 +122,7 @@ static void do_pause_e_move(const float &length, const float &fr) {
   destination[E_AXIS] += length / planner.e_factor[active_extruder];
   planner.buffer_line_kinematic(destination, fr, active_extruder);
   set_current_from_destination();
-  stepper.synchronize();
+  planner.synchronize();
 }
 
 /**
@@ -370,7 +370,7 @@ bool pause_print(const float &retract, const point_t &park_point, const float &u
   COPY(resume_position, current_position);
 
   // Wait for buffered blocks to complete
-  stepper.synchronize();
+  planner.synchronize();
 
   // Initial retract before move to filament change position
   if (retract && thermalManager.hotEnoughToExtrude(active_extruder))
@@ -533,7 +533,7 @@ void resume_print(const float &slow_load_length/*=0*/, const float &fast_load_le
   // Move XY to starting position, then Z
   do_blocking_move_to_xy(resume_position[X_AXIS], resume_position[Y_AXIS], NOZZLE_PARK_XY_FEEDRATE);
 
-  // Set Z_AXIS to saved position
+  // Move Z_AXIS to saved position
   do_blocking_move_to_z(resume_position[Z_AXIS], NOZZLE_PARK_Z_FEEDRATE);
 
   // Now all extrusion positions are resumed and ready to be confirmed
