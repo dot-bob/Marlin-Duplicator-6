@@ -16,7 +16,11 @@ cache:
   - "~/.platformio"
 
 env:
-  - TEST_PLATFORM="-e megaatmega2560"
+  - TEST_PLATFORM="megaatmega2560"
+  - TEST_PLATFORM="LPC1768"
+  - TEST_PLATFORM="DUE"
+  - TEST_PLATFORM="STM32F1"
+  - TEST_PLATFORM="teensy35"
 
 before_install:
   #
@@ -26,6 +30,8 @@ before_install:
   # Publish the buildroot script folder
   - chmod +x ${TRAVIS_BUILD_DIR}/buildroot/bin/*
   - export PATH=${TRAVIS_BUILD_DIR}/buildroot/bin/:${PATH}
+  - chmod +x ${TRAVIS_BUILD_DIR}/buildroot/share/tests/*
+  - export PATH=${TRAVIS_BUILD_DIR}/buildroot/share/tests/:${PATH}
 
 install:
   #- pip install -U platformio
@@ -55,4 +61,5 @@ branches:
   except:
     - # Do not build tags that we create when we upload to GitHub Releases
     - /^(?i:continuous)$/
+
 
