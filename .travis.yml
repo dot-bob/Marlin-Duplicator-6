@@ -16,7 +16,7 @@ cache:
   - "~/.platformio"
 
 env:
-  - TEST_PLATFORM="megaatmega2560"
+  - TEST_PLATFORM="-e megaatmega2560"
 
 before_install:
   #
