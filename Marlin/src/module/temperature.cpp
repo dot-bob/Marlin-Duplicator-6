@@ -582,7 +582,7 @@ int Temperature::getHeaterPower(const int heater) {
 //
 // Temperature Error Handlers
 //
-void Temperature::_temp_error(const int8_t e, const char * const serial_msg, const char * const lcd_msg) {
+void Temperature::_temp_error(const int8_t e, PGM_P const serial_msg, PGM_P const lcd_msg) {
   static bool killed = false;
   if (IsRunning()) {
     SERIAL_ERROR_START();
@@ -2435,10 +2435,8 @@ void Temperature::isr() {
         #define TEMP_CONDITIONS (wants_to_cool ? isCoolingHotend(target_extruder) : isHeatingHotend(target_extruder))
       #endif
 
-      #if DISABLED(BUSY_WHILE_HEATING)
-        #if ENABLED(HOST_KEEPALIVE_FEATURE)
-          const MarlinBusyState old_busy_state = gcode.busy_state;
-        #endif
+      #if DISABLED(BUSY_WHILE_HEATING) && ENABLED(HOST_KEEPALIVE_FEATURE)
+        const GcodeSuite::MarlinBusyState old_busy_state = gcode.busy_state;
         KEEPALIVE_STATE(NOT_BUSY);
       #endif
 
@@ -2564,10 +2562,8 @@ void Temperature::isr() {
       wait_for_heatup = true;
       millis_t now, next_temp_ms = 0, next_cool_check_ms = 0;
 
-      #if DISABLED(BUSY_WHILE_HEATING)
-        #if ENABLED(HOST_KEEPALIVE_FEATURE)
-          const MarlinBusyState old_busy_state = gcode.busy_state;
-        #endif
+      #if DISABLED(BUSY_WHILE_HEATING) && ENABLED(HOST_KEEPALIVE_FEATURE)
+        const GcodeSuite::MarlinBusyState old_busy_state = gcode.busy_state;
         KEEPALIVE_STATE(NOT_BUSY);
       #endif
 
