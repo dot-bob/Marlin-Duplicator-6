@@ -23,7 +23,7 @@
 
 #include "../../inc/MarlinConfig.h"
 
-#if ENABLED(EEPROM_SETTINGS)
+#if ENABLED(EEPROM_SETTINGS) || ENABLED(SD_FIRMWARE_UPDATE)
 
 #include "../shared/persistent_store_api.h"
 
@@ -53,7 +53,7 @@ bool PersistentStore::write_data(int &pos, const uint8_t *value, size_t size, ui
 
 bool PersistentStore::read_data(int &pos, uint8_t* value, size_t size, uint16_t *crc, const bool writing/*=true*/) {
   do {
-    uint8_t c = eeprom_read_byte((unsigned char*)pos);
+    uint8_t c = eeprom_read_byte((uint8_t*)pos);
     if (writing) *value = c;
     crc16(crc, &c, 1);
     pos++;
@@ -64,5 +64,5 @@ bool PersistentStore::read_data(int &pos, uint8_t* value, size_t size, uint16_t 
 
 size_t PersistentStore::capacity() { return E2END + 1; }
 
-#endif // EEPROM_SETTINGS
+#endif // EEPROM_SETTINGS || SD_FIRMWARE_UPDATE
 #endif // __AVR__

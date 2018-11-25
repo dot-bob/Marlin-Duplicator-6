@@ -19,7 +19,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
 #pragma once
 
 #include "minmax.h"
@@ -50,7 +49,7 @@
 
 // Clock speed factors
 #if !defined(CYCLES_PER_MICROSECOND) && !defined(__STM32F1__)
-  #define CYCLES_PER_MICROSECOND (F_CPU / 1000000L) // 16 or 20 on AVR
+  #define CYCLES_PER_MICROSECOND (F_CPU / 1000000UL) // 16 or 20 on AVR
 #endif
 
 // Nanoseconds per cycle
@@ -194,13 +193,10 @@
 
 #define PIN_EXISTS(PN) (defined(PN ##_PIN) && PN ##_PIN >= 0)
 
-#define PENDING(NOW,SOON) ((long)(NOW-(SOON))<0)
-#define ELAPSED(NOW,SOON) (!PENDING(NOW,SOON))
-
 #define MMM_TO_MMS(MM_M) ((MM_M)/60.0f)
 #define MMS_TO_MMM(MM_S) ((MM_S)*60.0f)
 
-#define NOOP do{} while(0)
+#define NOOP (void(0))
 
 #define CEILING(x,y) (((x) + (y) - 1) / (y))
 

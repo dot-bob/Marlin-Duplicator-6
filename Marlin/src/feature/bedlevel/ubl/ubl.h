@@ -19,15 +19,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-#ifndef UNIFIED_BED_LEVELING_H
-#define UNIFIED_BED_LEVELING_H
+#pragma once
 
 //#define UBL_DEVEL_DEBUGGING
 
 #include "../bedlevel.h"
 #include "../../../module/planner.h"
 #include "../../../module/motion.h"
+#include "../../../lcd/ultralcd.h"
 #include "../../../Marlin.h"
 
 #define UBL_VERSION "1.01"
@@ -50,14 +49,6 @@
 enum MeshPointType : char { INVALID, REAL, SET_IN_BITMAP };
 
 // External references
-
-extern uint8_t ubl_cnt;
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#if ENABLED(ULTRA_LCD)
-  void lcd_quick_feedback(const bool clear_buttons);
-#endif
 
 #define MESH_X_DIST (float(MESH_MAX_X - (MESH_MIN_X)) / float(GRID_MAX_POINTS_X - 1))
 #define MESH_Y_DIST (float(MESH_MAX_Y - (MESH_MIN_Y)) / float(GRID_MAX_POINTS_Y - 1))
@@ -92,11 +83,14 @@ class unified_bed_leveling {
     static void probe_entire_mesh(const float &rx, const float &ry, const bool do_ubl_mesh_map, const bool stow_probe, const bool do_furthest) _O0;
     static void tilt_mesh_based_on_3pts(const float &z1, const float &z2, const float &z3);
     static void tilt_mesh_based_on_probed_grid(const bool do_ubl_mesh_map);
-    static void g29_what_command();
-    static void g29_eeprom_dump();
-    static void g29_compare_current_mesh_to_stored_mesh();
     static bool smart_fill_one(const uint8_t x, const uint8_t y, const int8_t xdir, const int8_t ydir);
     static void smart_fill_mesh();
+
+    #if ENABLED(UBL_DEVEL_DEBUGGING)
+      static void g29_what_command();
+      static void g29_eeprom_dump();
+      static void g29_compare_current_mesh_to_stored_mesh();
+    #endif
 
   public:
 
@@ -157,7 +151,7 @@ class unified_bed_leveling {
                               MESH_MIN_Y + 14 * (MESH_Y_DIST), MESH_MIN_Y + 15 * (MESH_Y_DIST)
                             };
 
-    #if ENABLED(ULTIPANEL)
+    #if HAS_LCD_MENU
       static bool lcd_map_control;
     #endif
 
@@ -348,11 +342,11 @@ class unified_bed_leveling {
       return z0;
     }
 
-    FORCE_INLINE static float mesh_index_to_xpos(const uint8_t i) {
+    static inline float mesh_index_to_xpos(const uint8_t i) {
       return i < GRID_MAX_POINTS_X ? pgm_read_float(&_mesh_index_to_xpos[i]) : MESH_MIN_X + i * (MESH_X_DIST);
     }
 
-    FORCE_INLINE static float mesh_index_to_ypos(const uint8_t i) {
+    static inline float mesh_index_to_ypos(const uint8_t i) {
       return i < GRID_MAX_POINTS_Y ? pgm_read_float(&_mesh_index_to_ypos[i]) : MESH_MIN_Y + i * (MESH_Y_DIST);
     }
 
@@ -373,4 +367,4 @@ class unified_bed_leveling {
 
 extern unified_bed_leveling ubl;
 
-#endif // UNIFIED_BED_LEVELING_H
+#define Z_VALUES(X,Y) ubl.z_values[X][Y]

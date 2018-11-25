@@ -19,13 +19,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#pragma once
 
 /**
  * endstops.h - manages endstops
  */
-
-#ifndef __ENDSTOPS_H__
-#define __ENDSTOPS_H__
 
 #include "../inc/MarlinConfig.h"
 #include <stdint.h>
@@ -164,6 +162,8 @@ class Endstops {
       static void enable_z_probe(const bool onoff=true);
     #endif
 
+    static void resync();
+
     // Debugging of endstops
     #if ENABLED(PINS_DEBUGGING)
       static bool monitor_flag;
@@ -173,5 +173,3 @@ class Endstops {
 };
 
 extern Endstops endstops;
-
-#endif // __ENDSTOPS_H__

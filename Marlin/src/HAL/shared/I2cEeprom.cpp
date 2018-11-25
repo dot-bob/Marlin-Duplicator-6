@@ -82,7 +82,7 @@ static void eeprom_init(void) {
   }
 }
 
-void eeprom_write_byte(unsigned char *pos, unsigned char value) {
+void eeprom_write_byte(uint8_t *pos, unsigned char value) {
   unsigned eeprom_address = (unsigned) pos;
 
   eeprom_init();
@@ -128,8 +128,7 @@ void eeprom_update_block(const void *pos, void* eeprom_address, size_t n) {
 }
 
 
-unsigned char eeprom_read_byte(unsigned char *pos) {
-  byte data = 0xFF;
+uint8_t eeprom_read_byte(uint8_t *pos) {
   unsigned eeprom_address = (unsigned)pos;
 
   eeprom_init();
@@ -155,5 +154,4 @@ void eeprom_read_block(void* pos, const void* eeprom_address, size_t n) {
     if (Wire.available()) *((uint8_t*)pos + c) = Wire.read();
 }
 
-
-#endif // ENABLED(I2C_EEPROM)
+#endif // I2C_EEPROM

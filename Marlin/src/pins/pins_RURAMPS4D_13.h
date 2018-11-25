@@ -33,12 +33,10 @@
  */
 
 #ifndef __SAM3X8E__
-  #error "Oops!  Make sure you have 'Arduino Due' selected from the 'Tools -> Boards' menu."
+  #error "Oops! Select 'Arduino Due' in 'Tools > Board.'"
 #endif
 
-#ifndef BOARD_NAME
-  #define BOARD_NAME       "RuRAMPS4Due v1.3"
-#endif
+#define BOARD_NAME "RuRAMPS4Due v1.3"
 
 //
 // Servos
@@ -146,11 +144,13 @@
 #endif
 
 // SPI for Max6675 or Max31855 Thermocouple
-//#if DISABLED(SDSUPPORT)
-//  #define MAX6675_SS        53
-//#else
-//  #define MAX6675_SS        49
-//#endif
+/*
+#if DISABLED(SDSUPPORT)
+  #define MAX6675_SS_PIN   53
+#else
+  #define MAX6675_SS_PIN   49
+#endif
+*/
 
 //
 // Misc. Functions

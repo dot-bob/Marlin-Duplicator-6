@@ -19,9 +19,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-#ifndef CONFIGURATION_STORE_H
-#define CONFIGURATION_STORE_H
+#pragma once
 
 #include "../inc/MarlinConfig.h"
 
@@ -60,6 +58,11 @@ class MarlinSettings {
         return true;
       #endif
     }
+
+    #if ENABLED(SD_FIRMWARE_UPDATE)
+      static bool sd_update_status();                       // True if the SD-Firmware-Update EEPROM flag is set
+      static bool set_sd_update_status(const bool enable);  // Return 'true' after EEPROM is set (-> always true)
+    #endif
 
     #if ENABLED(EEPROM_SETTINGS)
       static bool load(PORTINIT_SOLO);      // Return 'true' if data was loaded ok
@@ -115,5 +118,3 @@ extern MarlinSettings settings;
 
 #undef PORTINIT_SOLO
 #undef PORTINIT_AFTER
-
-#endif // CONFIGURATION_STORE_H

@@ -20,16 +20,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#pragma once
 
 /**
  * HAL for stm32duino.com based on Libmaple and compatible (STM32F1)
  */
 
-#ifndef _HAL_STM32F1_H
-#define _HAL_STM32F1_H
-
 #define CPU_32_BIT
-#undef DEBUG_NONE
 
 #ifndef vsnprintf_P
   #define vsnprintf_P vsnprintf
@@ -42,15 +39,6 @@
 #include <stdint.h>
 #include <util/atomic.h>
 #include <Arduino.h>
-
-// --------------------------------------------------------------------------
-// Undefine DEBUG_ settings
-// --------------------------------------------------------------------------
-
-
-#undef DEBUG_NONE
-#undef DEBUG_FAULT
-#undef DEBUG_ALL
 
 // --------------------------------------------------------------------------
 // Includes
@@ -212,8 +200,8 @@ uint8_t spiRec(uint32_t chan);
  * TODO: Write all this eeprom stuff. Can emulate eeprom in flash as last resort.
  * Wire library should work for i2c eeproms.
  */
-void eeprom_write_byte(unsigned char *pos, unsigned char value);
-unsigned char eeprom_read_byte(unsigned char *pos);
+void eeprom_write_byte(uint8_t *pos, unsigned char value);
+uint8_t eeprom_read_byte(uint8_t *pos);
 void eeprom_read_block (void *__dst, const void *__src, size_t __n);
 void eeprom_update_block (const void *__src, void *__dst, size_t __n);
 
@@ -251,5 +239,3 @@ void HAL_enable_AdcFreerun(void);
 
 #define JTAG_DISABLE() afio_cfg_debug_ports(AFIO_DEBUG_SW_ONLY)
 #define JTAGSWD_DISABLE() afio_cfg_debug_ports(AFIO_DEBUG_NONE)
-
-#endif // _HAL_STM32F1_H

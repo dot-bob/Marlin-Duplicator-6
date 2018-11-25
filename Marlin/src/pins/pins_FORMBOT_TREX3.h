@@ -25,10 +25,10 @@
  */
 
 #ifndef __AVR_ATmega2560__
-  #error "Oops!  Make sure you have 'Arduino Mega' selected from the 'Tools -> Boards' menu."
+  #error "Oops! Select 'Arduino/Genuino Mega or Mega 2560' in 'Tools > Board.'"
 #endif
 
-#if E_STEPPERS > 2 || HOTENDS > 2
+#if HOTENDS > 2 || E_STEPPERS > 2
   #error "Formbot supports up to 2 hotends / E-steppers. Comment this line to keep going."
 #endif
 
@@ -113,9 +113,9 @@
 
 // SPI for Max6675 or Max31855 Thermocouple
 #if DISABLED(SDSUPPORT)
-  #define MAX6675_SS       66 // Do not use pin 53 if there is even the remote possibility of using Display/SD card
+  #define MAX6675_SS_PIN   66 // Do not use pin 53 if there is even the remote possibility of using Display/SD card
 #else
-  #define MAX6675_SS       66 // Do not use pin 49 as this is tied to the switch inside the SD card socket to detect if there is an SD card present
+  #define MAX6675_SS_PIN   66 // Do not use pin 49 as this is tied to the switch inside the SD card socket to detect if there is an SD card present
 #endif
 
 //
@@ -159,10 +159,6 @@
 
 // Use the RAMPS 1.4 Analog input 5 on the AUX2 connector
 #define FILWIDTH_PIN        5   // Analog Input
-
-#ifndef PS_ON_PIN
-  #define PS_ON_PIN        12
-#endif
 
 //
 // LCD / Controller

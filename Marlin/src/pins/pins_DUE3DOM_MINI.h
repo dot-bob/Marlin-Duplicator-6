@@ -25,7 +25,7 @@
  */
 
 #ifndef __SAM3X8E__
-  #error "Oops!  Make sure you have 'Arduino Due' selected from the 'Tools -> Boards' menu."
+  #error "Oops! Select 'Arduino Due' in 'Tools > Board.'"
 #endif
 
 #define BOARD_NAME "DUE3DOM MINI"
@@ -77,9 +77,9 @@
 
 // SPI for Max6675 or Max31855 Thermocouple
 #if DISABLED(SDSUPPORT)
-  #define MAX6675_SS       53
+  #define MAX6675_SS_PIN   53
 #else
-  #define MAX6675_SS       53
+  #define MAX6675_SS_PIN   53
 #endif
 
 //

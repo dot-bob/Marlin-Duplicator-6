@@ -35,7 +35,7 @@ void safe_delay(millis_t ms) {
   thermalManager.manage_heater(); // This keeps us safe if too many small safe_delay() calls are made
 }
 
-#if ENABLED(EEPROM_SETTINGS)
+#if ENABLED(EEPROM_SETTINGS) || ENABLED(SD_FIRMWARE_UPDATE)
 
   void crc16(uint16_t *crc, const void * const data, uint16_t cnt) {
     uint8_t *ptr = (uint8_t *)data;
@@ -46,9 +46,9 @@ void safe_delay(millis_t ms) {
     }
   }
 
-#endif // EEPROM_SETTINGS
+#endif // EEPROM_SETTINGS || SD_FIRMWARE_UPDATE
 
-#if ENABLED(ULTRA_LCD) || ENABLED(DEBUG_LEVELING_FEATURE)
+#if ENABLED(ULTRA_LCD) || ENABLED(DEBUG_LEVELING_FEATURE) || ENABLED(EXTENSIBLE_UI)
 
   char conv[8] = { 0 };
 
@@ -231,7 +231,8 @@ void safe_delay(millis_t ms) {
   char* ftostr52sp(const float &f) {
     long i = (f * 1000 + (f < 0 ? -5: 5)) / 10;
     uint8_t dig;
-    conv[1] = MINUSOR(i, RJDIGIT(i, 10000));
+    conv[0] = MINUSOR(i, ' ');
+    conv[1] = RJDIGIT(i, 10000);
     conv[2] = RJDIGIT(i, 1000);
     conv[3] = DIGIMOD(i, 100);
 
@@ -249,7 +250,7 @@ void safe_delay(millis_t ms) {
         conv[4] = conv[5] = ' ';
       conv[6] = ' ';
     }
-    return &conv[1];
+    return conv;
   }
 
 #endif // ULTRA_LCD
@@ -295,30 +296,32 @@ void safe_delay(millis_t ms) {
     #if HAS_BED_PROBE
       SERIAL_ECHOPGM("Probe Offset X:" STRINGIFY(X_PROBE_OFFSET_FROM_EXTRUDER) " Y:" STRINGIFY(Y_PROBE_OFFSET_FROM_EXTRUDER));
       SERIAL_ECHOPAIR(" Z:", zprobe_zoffset);
-      #if X_PROBE_OFFSET_FROM_EXTRUDER > 0
+      if ((X_PROBE_OFFSET_FROM_EXTRUDER) > 0)
         SERIAL_ECHOPGM(" (Right");
-      #elif X_PROBE_OFFSET_FROM_EXTRUDER < 0
+      else if ((X_PROBE_OFFSET_FROM_EXTRUDER) < 0)
         SERIAL_ECHOPGM(" (Left");
-      #elif Y_PROBE_OFFSET_FROM_EXTRUDER != 0
+      else if ((Y_PROBE_OFFSET_FROM_EXTRUDER) != 0)
         SERIAL_ECHOPGM(" (Middle");
-      #else
+      else
         SERIAL_ECHOPGM(" (Aligned With");
-      #endif
-      #if Y_PROBE_OFFSET_FROM_EXTRUDER > 0
+
+      if ((Y_PROBE_OFFSET_FROM_EXTRUDER) > 0) {
         #if IS_SCARA
           SERIAL_ECHOPGM("-Distal");
         #else
           SERIAL_ECHOPGM("-Back");
         #endif
-      #elif Y_PROBE_OFFSET_FROM_EXTRUDER < 0
+      }
+      else if ((Y_PROBE_OFFSET_FROM_EXTRUDER) < 0) {
         #if IS_SCARA
           SERIAL_ECHOPGM("-Proximal");
         #else
           SERIAL_ECHOPGM("-Front");
         #endif
-      #elif X_PROBE_OFFSET_FROM_EXTRUDER != 0
+      }
+      else if ((X_PROBE_OFFSET_FROM_EXTRUDER) != 0)
         SERIAL_ECHOPGM("-Center");
-      #endif
+
       if (zprobe_zoffset < 0)
         SERIAL_ECHOPGM(" & Below");
       else if (zprobe_zoffset > 0)

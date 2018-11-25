@@ -19,9 +19,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-#ifndef _SANITYCHECK_AVR_8_BIT_H_
-#define _SANITYCHECK_AVR_8_BIT_H_
+#pragma once
 
 /**
  * Test AVR specific configuration values for errors at compile-time.
@@ -81,11 +79,11 @@
     #elif PIN_EXISTS(E5_AUTO_FAN) && SPINDLE_LASER_PWM_PIN == E5_AUTO_FAN_PIN
       #error "SPINDLE_LASER_PWM_PIN is used by E5_AUTO_FAN_PIN."
     #elif PIN_EXISTS(FAN) && SPINDLE_LASER_PWM_PIN == FAN_PIN
-      #error "SPINDLE_LASER_PWM_PIN is used FAN_PIN."
+      #error "SPINDLE_LASER_PWM_PIN is used by FAN_PIN."
     #elif PIN_EXISTS(FAN1) && SPINDLE_LASER_PWM_PIN == FAN1_PIN
-      #error "SPINDLE_LASER_PWM_PIN is used FAN1_PIN."
+      #error "SPINDLE_LASER_PWM_PIN is used by FAN1_PIN."
     #elif PIN_EXISTS(FAN2) && SPINDLE_LASER_PWM_PIN == FAN2_PIN
-      #error "SPINDLE_LASER_PWM_PIN is used FAN2_PIN."
+      #error "SPINDLE_LASER_PWM_PIN is used by FAN2_PIN."
     #elif PIN_EXISTS(CONTROLLERFAN) && SPINDLE_LASER_PWM_PIN == CONTROLLERFAN_PIN
       #error "SPINDLE_LASER_PWM_PIN is used by CONTROLLERFAN_PIN."
     #elif PIN_EXISTS(MOTOR_CURRENT_PWM_XY) && SPINDLE_LASER_PWM_PIN == MOTOR_CURRENT_PWM_XY_PIN
@@ -116,5 +114,3 @@
     || defined(E4_HARDWARE_SERIAL) )
   #error "Select hardware UART for TMC2208 to use both TMC2208 and ENDSTOP_INTERRUPTS_FEATURE."
 #endif
-
-#endif // _SANITYCHECK_AVR_8_BIT_H_
