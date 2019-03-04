@@ -38,14 +38,16 @@
 #include "../gcode/gcode.h"
 #include "../lcd/ultralcd.h"
 
-#include "../Marlin.h"
+#if ENABLED(BLTOUCH) || ENABLED(Z_PROBE_SLED) || ENABLED(Z_PROBE_ALLEN_KEY) || ENABLED(PROBE_TRIGGERED_WHEN_STOWED_TEST) || (QUIET_PROBING && ENABLED(PROBING_STEPPERS_OFF))
+  #include "../Marlin.h" // for stop(), disable_e_steppers
+#endif
 
 #if HAS_LEVELING
   #include "../feature/bedlevel/bedlevel.h"
 #endif
 
 #if ENABLED(DELTA)
-  #include "../module/delta.h"
+  #include "delta.h"
 #endif
 
 #if ENABLED(BABYSTEP_ZPROBE_OFFSET)
@@ -55,12 +57,16 @@
 float zprobe_zoffset; // Initialized by settings.load()
 
 #if HAS_Z_SERVO_PROBE
-  #include "../module/servo.h"
+  #include "servo.h"
 #endif
 
 #if ENABLED(SENSORLESS_PROBING)
   #include "stepper.h"
   #include "../feature/tmc_util.h"
+#endif
+
+#if QUIET_PROBING
+  #include "stepper_indirection.h"
 #endif
 
 #if ENABLED(Z_PROBE_SLED)
@@ -262,31 +268,13 @@ float zprobe_zoffset; // Initialized by settings.load()
 
 #endif // Z_PROBE_ALLEN_KEY
 
-#if ENABLED(PROBING_FANS_OFF)
-
-  void fans_pause(const bool p) {
-    if (p != fans_paused) {
-      fans_paused = p;
-      if (p)
-        for (uint8_t x = 0; x < FAN_COUNT; x++) {
-          paused_fan_speed[x] = fan_speed[x];
-          fan_speed[x] = 0;
-        }
-      else
-        for (uint8_t x = 0; x < FAN_COUNT; x++)
-          fan_speed[x] = paused_fan_speed[x];
-    }
-  }
-
-#endif // PROBING_FANS_OFF
-
 #if QUIET_PROBING
   void probing_pause(const bool p) {
     #if ENABLED(PROBING_HEATERS_OFF)
       thermalManager.pause(p);
     #endif
     #if ENABLED(PROBING_FANS_OFF)
-      fans_pause(p);
+      thermalManager.set_fans_paused(p);
     #endif
     #if ENABLED(PROBING_STEPPERS_OFF)
       disable_e_steppers();
@@ -320,8 +308,7 @@ float zprobe_zoffset; // Initialized by settings.load()
                                          //  (Measured completion time was 0.65 seconds
                                          //   after reset, deploy, and stow sequence)
       if (TEST_BLTOUCH()) {              // If it still claims to be triggered...
-        SERIAL_ERROR_START();
-        SERIAL_ERRORLNPGM(MSG_STOP_BLTOUCH);
+        SERIAL_ERROR_MSG(MSG_STOP_BLTOUCH);
         stop();                          // punt!
         return true;
       }
@@ -450,8 +437,7 @@ bool set_probe_deployed(const bool deploy) {
       #define _AUE_ARGS
     #endif
     if (axis_unhomed_error(_AUE_ARGS)) {
-      SERIAL_ERROR_START();
-      SERIAL_ERRORLNPGM(MSG_STOP_UNHOMED);
+      SERIAL_ERROR_MSG(MSG_STOP_UNHOMED);
       stop();
       return true;
     }
@@ -479,8 +465,7 @@ bool set_probe_deployed(const bool deploy) {
 
     if (PROBE_STOWED() == deploy) {                // Unchanged after deploy/stow action?
       if (IsRunning()) {
-        SERIAL_ERROR_START();
-        SERIAL_ERRORLNPGM("Z-Probe failed");
+        SERIAL_ERROR_MSG("Z-Probe failed");
         LCD_ALERTMESSAGEPGM("Err: ZPROBE");
       }
       stop();
@@ -505,6 +490,30 @@ bool set_probe_deployed(const bool deploy) {
       do_blocking_move_to_z(Z_AFTER_PROBING);
       current_position[Z_AXIS] = Z_AFTER_PROBING;
     }
+  }
+#endif
+
+#if ENABLED(MEASURE_BACKLASH_WHEN_PROBING)
+  #if ENABLED(Z_MIN_PROBE_ENDSTOP)
+    #define TEST_PROBE_PIN (READ(Z_MIN_PROBE_PIN) != Z_MIN_PROBE_ENDSTOP_INVERTING)
+  #else
+    #define TEST_PROBE_PIN (READ(Z_MIN_PIN) != Z_MIN_ENDSTOP_INVERTING)
+  #endif
+
+  extern float backlash_measured_mm[];
+  extern uint8_t backlash_measured_num[];
+
+  /* Measure Z backlash by raising nozzle in increments until probe deactivates */
+  static void measure_backlash_with_probe() {
+    if (backlash_measured_num[Z_AXIS] == 255) return;
+
+    float start_height = current_position[Z_AXIS];
+    while (current_position[Z_AXIS] < (start_height + BACKLASH_MEASUREMENT_LIMIT) && TEST_PROBE_PIN)
+      do_blocking_move_to_z(current_position[Z_AXIS] + BACKLASH_MEASUREMENT_RESOLUTION, MMM_TO_MMS(BACKLASH_MEASUREMENT_FEEDRATE));
+
+    // The backlash from all probe points is averaged, so count the number of measurements
+    backlash_measured_mm[Z_AXIS] += current_position[Z_AXIS] - start_height;
+    backlash_measured_num[Z_AXIS]++;
   }
 #endif
 
@@ -542,11 +551,12 @@ static bool do_probe_move(const float z, const float fr_mm_s) {
 
   // Disable stealthChop if used. Enable diag1 pin on driver.
   #if ENABLED(SENSORLESS_PROBING)
+    sensorless_t stealth_states { false, false, false, false, false, false, false };
     #if ENABLED(DELTA)
-      tmc_stallguard(stepperX);
-      tmc_stallguard(stepperY);
+      stealth_states.x = tmc_enable_stallguard(stepperX);
+      stealth_states.y = tmc_enable_stallguard(stepperY);
     #endif
-    tmc_stallguard(stepperZ);
+    stealth_states.z = tmc_enable_stallguard(stepperZ);
     endstops.enable(true);
   #endif
 
@@ -580,10 +590,10 @@ static bool do_probe_move(const float z, const float fr_mm_s) {
   #if ENABLED(SENSORLESS_PROBING)
     endstops.not_homing();
     #if ENABLED(DELTA)
-      tmc_stallguard(stepperX, false);
-      tmc_stallguard(stepperY, false);
+      tmc_disable_stallguard(stepperX, stealth_states.x);
+      tmc_disable_stallguard(stepperY, stealth_states.y);
     #endif
-    tmc_stallguard(stepperZ, false);
+    tmc_disable_stallguard(stepperZ, stealth_states.z);
   #endif
 
   // Retract BLTouch immediately after a probe if it was triggered
@@ -673,6 +683,10 @@ static float run_z_probe() {
         #endif
         return NAN;
       }
+
+      #if ENABLED(MEASURE_BACKLASH_WHEN_PROBING)
+        measure_backlash_with_probe();
+      #endif
 
   #if MULTIPLE_PROBING > 2
       probes_total += current_position[Z_AXIS];
@@ -771,13 +785,9 @@ float probe_pt(const float &rx, const float &ry, const ProbePtRaise raise_after/
   }
 
   if (verbose_level > 2) {
-    SERIAL_PROTOCOLPGM("Bed X: ");
-    SERIAL_PROTOCOL_F(LOGICAL_X_POSITION(rx), 3);
-    SERIAL_PROTOCOLPGM(" Y: ");
-    SERIAL_PROTOCOL_F(LOGICAL_Y_POSITION(ry), 3);
-    SERIAL_PROTOCOLPGM(" Z: ");
-    SERIAL_PROTOCOL_F(measured_z, 3);
-    SERIAL_EOL();
+    SERIAL_ECHOPAIR_F("Bed X: ", LOGICAL_X_POSITION(rx), 3);
+    SERIAL_ECHOPAIR_F(" Y: ", LOGICAL_Y_POSITION(ry), 3);
+    SERIAL_ECHOLNPAIR_F(" Z: ", measured_z, 3);
   }
 
   feedrate_mm_s = old_feedrate_mm_s;
@@ -785,8 +795,7 @@ float probe_pt(const float &rx, const float &ry, const ProbePtRaise raise_after/
   if (isnan(measured_z)) {
     STOW_PROBE();
     LCD_MESSAGEPGM(MSG_ERR_PROBING_FAILED);
-    SERIAL_ERROR_START();
-    SERIAL_ERRORLNPGM(MSG_ERR_PROBING_FAILED);
+    SERIAL_ERROR_MSG(MSG_ERR_PROBING_FAILED);
   }
 
   #if ENABLED(DEBUG_LEVELING_FEATURE)

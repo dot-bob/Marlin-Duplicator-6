@@ -45,6 +45,10 @@
 
 #include "../../lcd/ultralcd.h"
 
+#if HAS_DRIVER(L6470)                         // set L6470 absolute position registers to counts
+  #include "../../libs/L6470/L6470_Marlin.h"
+#endif
+
 #if ENABLED(QUICK_HOME)
 
   static void quick_home_xy() {
@@ -67,8 +71,15 @@
                 fr_mm_s = MIN(homing_feedrate(X_AXIS), homing_feedrate(Y_AXIS)) * SQRT(sq(mlratio) + 1.0);
 
     #if ENABLED(SENSORLESS_HOMING)
-      sensorless_homing_per_axis(X_AXIS);
-      sensorless_homing_per_axis(Y_AXIS);
+      sensorless_t stealth_states { false, false, false, false, false, false, false };
+      stealth_states.x = tmc_enable_stallguard(stepperX);
+      stealth_states.y = tmc_enable_stallguard(stepperY);
+      #if AXIS_HAS_STALLGUARD(X2)
+        stealth_states.x2 = tmc_enable_stallguard(stepperX2);
+      #endif
+      #if AXIS_HAS_STALLGUARD(Y2)
+        stealth_states.y2 = tmc_enable_stallguard(stepperY2);
+      #endif
     #endif
 
     do_blocking_move_to_xy(1.5 * mlx * x_axis_home_dir, 1.5 * mly * home_dir(Y_AXIS), fr_mm_s);
@@ -78,8 +89,14 @@
     current_position[X_AXIS] = current_position[Y_AXIS] = 0.0;
 
     #if ENABLED(SENSORLESS_HOMING)
-      sensorless_homing_per_axis(X_AXIS, false);
-      sensorless_homing_per_axis(Y_AXIS, false);
+      tmc_disable_stallguard(stepperX, stealth_states.x);
+      tmc_disable_stallguard(stepperY, stealth_states.y);
+      #if AXIS_HAS_STALLGUARD(X2)
+        tmc_disable_stallguard(stepperX2, stealth_states.x2);
+      #endif
+      #if AXIS_HAS_STALLGUARD(Y2)
+        tmc_disable_stallguard(stepperY2, stealth_states.y2);
+      #endif
     #endif
   }
 
@@ -92,8 +109,7 @@
     // Disallow Z homing if X or Y are unknown
     if (!TEST(axis_known_position, X_AXIS) || !TEST(axis_known_position, Y_AXIS)) {
       LCD_MESSAGEPGM(MSG_ERR_Z_HOMING);
-      SERIAL_ECHO_START();
-      SERIAL_ECHOLNPGM(MSG_ERR_Z_HOMING);
+      SERIAL_ECHO_MSG(MSG_ERR_Z_HOMING);
       return;
     }
 
@@ -135,8 +151,7 @@
     }
     else {
       LCD_MESSAGEPGM(MSG_ZPROBE_OUT);
-      SERIAL_ECHO_START();
-      SERIAL_ECHOLNPGM(MSG_ZPROBE_OUT);
+      SERIAL_ECHO_MSG(MSG_ZPROBE_OUT);
     }
 
     #if ENABLED(DEBUG_LEVELING_FEATURE)
@@ -440,5 +455,13 @@ void GcodeSuite::G28(const bool always_home_all) {
 
   #if ENABLED(DEBUG_LEVELING_FEATURE)
     if (DEBUGGING(LEVELING)) SERIAL_ECHOLNPGM("<<< G28");
+  #endif
+
+  #if HAS_DRIVER(L6470)
+    // Set L6470 absolute position registers to counts
+    for (uint8_t j = 1; j <= L6470::chain[0]; j++) {
+      const uint8_t cv = L6470::chain[j];
+      L6470.set_param(cv, L6470_ABS_POS, stepper.position((AxisEnum)L6470.axis_xref[cv]));
+    }
   #endif
 }

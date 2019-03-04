@@ -79,6 +79,8 @@
 
 #include "stepper.h"
 
+Stepper stepper; // Singleton
+
 #ifdef __AVR__
   #include "speed_lookuptable.h"
 #endif
@@ -87,7 +89,7 @@
 #include "planner.h"
 #include "motion.h"
 
-#include "../module/temperature.h"
+#include "temperature.h"
 #include "../lcd/ultralcd.h"
 #include "../core/language.h"
 #include "../gcode/queue.h"
@@ -107,10 +109,12 @@
   #include "../feature/mixing.h"
 #endif
 
-Stepper stepper; // Singleton
-
 #if FILAMENT_RUNOUT_DISTANCE_MM > 0
   #include "../feature/runout.h"
+#endif
+
+#if HAS_DRIVER(L6470)
+  #include "../libs/L6470/L6470_Marlin.h"
 #endif
 
 // public:
@@ -125,10 +129,10 @@ Stepper stepper; // Singleton
 
 // private:
 
-block_t* Stepper::current_block = NULL; // A pointer to the block currently being traced
+block_t* Stepper::current_block; // (= NULL) A pointer to the block currently being traced
 
-uint8_t Stepper::last_direction_bits = 0,
-        Stepper::axis_did_move;
+uint8_t Stepper::last_direction_bits, // = 0
+        Stepper::axis_did_move; // = 0
 
 bool Stepper::abort_current_block;
 
@@ -256,6 +260,18 @@ int8_t Stepper::count_direction[NUM_AXIS] = { 0, 0, 0, 0 };
     A##3_STEP_WRITE(V);                                                                                                     \
   }
 
+#define TRIPLE_SEPARATE_APPLY_STEP(A,V)           \
+  if (separate_multi_axis) {                      \
+    if (!locked_##A##_motor) A##_STEP_WRITE(V);   \
+    if (!locked_##A##2_motor) A##2_STEP_WRITE(V); \
+    if (!locked_##A##3_motor) A##3_STEP_WRITE(V); \
+  }                                               \
+  else {                                          \
+    A##_STEP_WRITE(V);                            \
+    A##2_STEP_WRITE(V);                           \
+    A##3_STEP_WRITE(V);                           \
+  }
+
 #if ENABLED(X_DUAL_STEPPER_DRIVERS)
   #define X_APPLY_DIR(v,Q) do{ X_DIR_WRITE(v); X2_DIR_WRITE((v) != INVERT_X2_VS_X_DIR); }while(0)
   #if ENABLED(X_DUAL_ENDSTOPS)
@@ -301,6 +317,8 @@ int8_t Stepper::count_direction[NUM_AXIS] = { 0, 0, 0, 0 };
   #define Z_APPLY_DIR(v,Q) do{ Z_DIR_WRITE(v); Z2_DIR_WRITE(v); Z3_DIR_WRITE(v); }while(0)
   #if ENABLED(Z_TRIPLE_ENDSTOPS)
     #define Z_APPLY_STEP(v,Q) TRIPLE_ENDSTOP_APPLY_STEP(Z,v)
+  #elif ENABLED(Z_STEPPER_AUTO_ALIGN)
+    #define Z_APPLY_STEP(v,Q) TRIPLE_SEPARATE_APPLY_STEP(Z,v)
   #else
     #define Z_APPLY_STEP(v,Q) do{ Z_STEP_WRITE(v); Z2_STEP_WRITE(v); Z3_STEP_WRITE(v); }while(0)
   #endif
@@ -336,22 +354,28 @@ void Stepper::wake_up() {
  */
 void Stepper::set_directions() {
 
-  #define SET_STEP_DIR(A) \
-    if (motor_direction(_AXIS(A))) { \
-      A##_APPLY_DIR(INVERT_## A##_DIR, false); \
-      count_direction[_AXIS(A)] = -1; \
-    } \
-    else { \
+  #if HAS_DRIVER(L6470)
+    uint8_t L6470_buf[MAX_L6470 + 1];   // chip command sequence - element 0 not used
+  #endif
+
+  #define SET_STEP_DIR(A)                       \
+    if (motor_direction(_AXIS(A))) {            \
+      A##_APPLY_DIR(INVERT_## A##_DIR, false);  \
+      count_direction[_AXIS(A)] = -1;           \
+    }                                           \
+    else {                                      \
       A##_APPLY_DIR(!INVERT_## A##_DIR, false); \
-      count_direction[_AXIS(A)] = 1; \
+      count_direction[_AXIS(A)] = 1;            \
     }
 
   #if HAS_X_DIR
     SET_STEP_DIR(X); // A
   #endif
+
   #if HAS_Y_DIR
     SET_STEP_DIR(Y); // B
   #endif
+
   #if HAS_Z_DIR
     SET_STEP_DIR(Z); // C
   #endif
@@ -379,6 +403,27 @@ void Stepper::set_directions() {
       }
     #endif
   #endif // !LIN_ADVANCE
+
+  #if HAS_DRIVER(L6470)
+
+    if (L6470.spi_active) {
+      L6470.spi_abort = true;                     // interrupted a SPI transfer - need to shut it down gracefully
+      for (uint8_t j = 1; j <= L6470::chain[0]; j++)
+        L6470_buf[j] = dSPIN_NOP;                 // fill buffer with NOOP commands
+      L6470.transfer(L6470_buf, L6470::chain[0]);  // send enough NOOPs to complete any command
+      L6470.transfer(L6470_buf, L6470::chain[0]);
+      L6470.transfer(L6470_buf, L6470::chain[0]);
+    }
+
+    // The L6470.dir_commands[] array holds the direction command for each stepper
+
+    //scan command array and copy matches into L6470.transfer
+    for (uint8_t j = 1; j <= L6470::chain[0]; j++)
+      L6470_buf[j] = L6470.dir_commands[L6470::chain[j]];
+
+    L6470.transfer(L6470_buf, L6470::chain[0]);  // send the command stream to the drivers
+
+  #endif
 
   // A small delay may be needed after changing direction
   #if MINIMUM_STEPPER_DIR_DELAY > 0
@@ -1752,10 +1797,15 @@ uint32_t Stepper::stepper_block_phase_isr() {
         else LA_isr_rate = LA_ADV_NEVER;
       #endif
 
-      if (current_block->direction_bits != last_direction_bits
+      if (
+        #if HAS_DRIVER(L6470)
+          true  // Always set direction for L6470 (This also enables the chips)
+        #else
+          current_block->direction_bits != last_direction_bits
           #if DISABLED(MIXING_EXTRUDER)
             || stepper_extruder != last_moved_extruder
           #endif
+        #endif
       ) {
         last_direction_bits = current_block->direction_bits;
         #if EXTRUDERS > 1
@@ -2099,7 +2149,14 @@ void Stepper::init() {
   ENABLE_STEPPER_DRIVER_INTERRUPT();
 
   sei();
-  set_directions(); // Init directions to last_direction_bits = 0  Keeps Z from being reversed
+
+  // Init direction bits for first moves
+  last_direction_bits = 0
+    | (INVERT_X_DIR ? _BV(X_AXIS) : 0)
+    | (INVERT_Y_DIR ? _BV(Y_AXIS) : 0)
+    | (INVERT_Z_DIR ? _BV(Z_AXIS) : 0);
+
+  set_directions();
 }
 
 /**
@@ -2218,25 +2275,25 @@ void Stepper::report_positions() {
   if (was_enabled) ENABLE_STEPPER_DRIVER_INTERRUPT();
 
   #if CORE_IS_XY || CORE_IS_XZ || ENABLED(DELTA) || IS_SCARA
-    SERIAL_PROTOCOLPGM(MSG_COUNT_A);
+    SERIAL_ECHOPGM(MSG_COUNT_A);
   #else
-    SERIAL_PROTOCOLPGM(MSG_COUNT_X);
+    SERIAL_ECHOPGM(MSG_COUNT_X);
   #endif
-  SERIAL_PROTOCOL(xpos);
+  SERIAL_ECHO(xpos);
 
   #if CORE_IS_XY || CORE_IS_YZ || ENABLED(DELTA) || IS_SCARA
-    SERIAL_PROTOCOLPGM(" B:");
+    SERIAL_ECHOPGM(" B:");
   #else
-    SERIAL_PROTOCOLPGM(" Y:");
+    SERIAL_ECHOPGM(" Y:");
   #endif
-  SERIAL_PROTOCOL(ypos);
+  SERIAL_ECHO(ypos);
 
   #if CORE_IS_XZ || CORE_IS_YZ || ENABLED(DELTA)
-    SERIAL_PROTOCOLPGM(" C:");
+    SERIAL_ECHOPGM(" C:");
   #else
-    SERIAL_PROTOCOLPGM(" Z:");
+    SERIAL_ECHOPGM(" Z:");
   #endif
-  SERIAL_PROTOCOL(zpos);
+  SERIAL_ECHO(zpos);
 
   SERIAL_EOL();
 }
@@ -2813,82 +2870,81 @@ void Stepper::report_positions() {
         case 128: microstep_ms(driver, MICROSTEP128); break;
       #endif
 
-      default: SERIAL_ERROR_START(); SERIAL_ERRORLNPGM("Microsteps unavailable"); break;
+      default: SERIAL_ERROR_MSG("Microsteps unavailable"); break;
     }
   }
 
   void Stepper::microstep_readings() {
-    SERIAL_PROTOCOLLNPGM("MS1,MS2,MS3 Pins");
-    SERIAL_PROTOCOLPGM("X: ");
+    SERIAL_ECHOPGM("MS1,MS2,MS3 Pins\nX: ");
     #if HAS_X_MICROSTEPS
-      SERIAL_PROTOCOL(READ(X_MS1_PIN));
-      SERIAL_PROTOCOL(READ(X_MS2_PIN));
+      SERIAL_CHAR('0' + READ(X_MS1_PIN));
+      SERIAL_CHAR('0' + READ(X_MS2_PIN));
       #if PIN_EXISTS(X_MS3)
-        SERIAL_PROTOCOLLN(READ(X_MS3_PIN));
+        SERIAL_ECHOLN((int)READ(X_MS3_PIN));
       #endif
     #endif
     #if HAS_Y_MICROSTEPS
-      SERIAL_PROTOCOLPGM("Y: ");
-      SERIAL_PROTOCOL(READ(Y_MS1_PIN));
-      SERIAL_PROTOCOL(READ(Y_MS2_PIN));
+      SERIAL_ECHOPGM("Y: ");
+      SERIAL_CHAR('0' + READ(Y_MS1_PIN));
+      SERIAL_CHAR('0' + READ(Y_MS2_PIN));
       #if PIN_EXISTS(Y_MS3)
-        SERIAL_PROTOCOLLN(READ(Y_MS3_PIN));
+        SERIAL_ECHOLN((int)READ(Y_MS3_PIN));
       #endif
     #endif
     #if HAS_Z_MICROSTEPS
-      SERIAL_PROTOCOLPGM("Z: ");
-      SERIAL_PROTOCOL(READ(Z_MS1_PIN));
-      SERIAL_PROTOCOL(READ(Z_MS2_PIN));
+      SERIAL_ECHOPGM("Z: ");
+      SERIAL_CHAR('0' + READ(Z_MS1_PIN));
+      SERIAL_CHAR('0' + READ(Z_MS2_PIN));
       #if PIN_EXISTS(Z_MS3)
-        SERIAL_PROTOCOLLN(READ(Z_MS3_PIN));
+        SERIAL_ECHOLN((int)READ(Z_MS3_PIN));
       #endif
     #endif
     #if HAS_E0_MICROSTEPS
-      SERIAL_PROTOCOLPGM("E0: ");
-      SERIAL_PROTOCOL(READ(E0_MS1_PIN));
-      SERIAL_PROTOCOL(READ(E0_MS2_PIN));
+      SERIAL_ECHOPGM("E0: ");
+      SERIAL_CHAR('0' + READ(E0_MS1_PIN));
+      SERIAL_CHAR('0' + READ(E0_MS2_PIN));
       #if PIN_EXISTS(E0_MS3)
-        SERIAL_PROTOCOLLN(READ(E0_MS3_PIN));
+        SERIAL_ECHOLN((int)READ(E0_MS3_PIN));
       #endif
     #endif
     #if HAS_E1_MICROSTEPS
-      SERIAL_PROTOCOLPGM("E1: ");
-      SERIAL_PROTOCOL(READ(E1_MS1_PIN));
-      SERIAL_PROTOCOL(READ(E1_MS2_PIN));
+      SERIAL_ECHOPGM("E1: ");
+      SERIAL_CHAR('0' + READ(E1_MS1_PIN));
+      SERIAL_CHAR('0' + READ(E1_MS2_PIN));
       #if PIN_EXISTS(E1_MS3)
-        SERIAL_PROTOCOLLN(READ(E1_MS3_PIN));
+        SERIAL_ECHOLN((int)READ(E1_MS3_PIN));
       #endif
     #endif
     #if HAS_E2_MICROSTEPS
-      SERIAL_PROTOCOLPGM("E2: ");
-      SERIAL_PROTOCOL(READ(E2_MS1_PIN));
-      SERIAL_PROTOCOL(READ(E2_MS2_PIN));
+      SERIAL_ECHOPGM("E2: ");
+      SERIAL_CHAR('0' + READ(E2_MS1_PIN));
+      SERIAL_CHAR('0' + READ(E2_MS2_PIN));
       #if PIN_EXISTS(E2_MS3)
-        SERIAL_PROTOCOLLN(READ(E2_MS3_PIN));
+        SERIAL_ECHOLN((int)READ(E2_MS3_PIN));
       #endif
     #endif
     #if HAS_E3_MICROSTEPS
-      SERIAL_PROTOCOLPGM("E3: ");
-      SERIAL_PROTOCOL(READ(E3_MS1_PIN));
-      SERIAL_PROTOCOL(READ(E3_MS2_PIN));
+      SERIAL_ECHOPGM("E3: ");
+      SERIAL_CHAR('0' + READ(E3_MS1_PIN));
+      SERIAL_CHAR('0' + READ(E3_MS2_PIN));
       #if PIN_EXISTS(E3_MS3)
-        SERIAL_PROTOCOLLN(READ(E3_MS3_PIN));
+        SERIAL_ECHOLN((int)READ(E3_MS3_PIN));
       #endif
     #endif
     #if HAS_E4_MICROSTEPS
-      SERIAL_PROTOCOLPGM("E4: ");
-      SERIAL_PROTOCOL(READ(E4_MS1_PIN));
-      SERIAL_PROTOCOL(READ(E4_MS2_PIN));
+      SERIAL_ECHOPGM("E4: ");
+      SERIAL_CHAR('0' + READ(E4_MS1_PIN));
+      SERIAL_CHAR('0' + READ(E4_MS2_PIN));
       #if PIN_EXISTS(E4_MS3)
-        SERIAL_PROTOCOLLN(READ(E4_MS3_PIN));
+        SERIAL_ECHOLN((int)READ(E4_MS3_PIN));
       #endif
     #endif
     #if HAS_E5_MICROSTEPS
-      SERIAL_PROTOCOLPGM("E5: ");
-      SERIAL_PROTOCOL(READ(E5_MS1_PIN));
-      SERIAL_PROTOCOLLN(READ(E5_MS2_PIN));
+      SERIAL_ECHOPGM("E5: ");
+      SERIAL_CHAR('0' + READ(E5_MS1_PIN));
+      SERIAL_ECHOLN((int)READ(E5_MS2_PIN));
       #if PIN_EXISTS(E5_MS3)
-        SERIAL_PROTOCOLLN(READ(E5_MS3_PIN));
+        SERIAL_ECHOLN((int)READ(E5_MS3_PIN));
       #endif
     #endif
   }

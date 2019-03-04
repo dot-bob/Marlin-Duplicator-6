@@ -50,18 +50,6 @@
 // Estimate the amount of time the Stepper ISR will take to execute
 //
 
-#ifndef MINIMUM_STEPPER_PULSE
-  #define MINIMUM_STEPPER_PULSE 0UL
-#endif
-
-#ifndef MAXIMUM_STEPPER_RATE
-  #if MINIMUM_STEPPER_PULSE
-    #define MAXIMUM_STEPPER_RATE (1000000UL / (2UL * (unsigned long)(MINIMUM_STEPPER_PULSE)))
-  #else
-    #define MAXIMUM_STEPPER_RATE 500000UL
-  #endif
-#endif
-
 #ifdef CPU_32_BIT
 
   // The base ISR takes 792 cycles
@@ -235,7 +223,7 @@
   #include "speed_lookuptable.h"
 #endif
 
-#include "../module/planner.h"
+#include "planner.h"
 #include "../core/language.h"
 
 class Stepper {

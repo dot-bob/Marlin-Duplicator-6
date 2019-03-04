@@ -264,6 +264,8 @@
   #error "MEASURED_(UPPER|LOWER)_LIMIT is now FILWIDTH_ERROR_MARGIN. Please update your configuration."
 #elif defined(HAVE_TMCDRIVER)
   #error "HAVE_TMCDRIVER is now [AXIS]_DRIVER_TYPE TMC26X. Please update your Configuration.h."
+#elif defined(STEALTHCHOP)
+  #error "STEALTHCHOP is now STEALTHCHOP_(XY|Z|E). Please update your Configuration_adv.h."
 #elif defined(HAVE_TMC26X)
   #error "HAVE_TMC26X is now [AXIS]_DRIVER_TYPE TMC26X. Please update your Configuration.h."
 #elif defined(HAVE_TMC2130)
@@ -339,6 +341,8 @@
   #error "MAX6675_SS is now MAX6675_SS_PIN. Please update your configuration and/or pins."
 #elif defined(MAX6675_SS2)
   #error "MAX6675_SS2 is now MAX6675_SS2_PIN. Please update your configuration and/or pins."
+#elif defined(TMC_Z_CALIBRATION)
+  #error "TMC_Z_CALIBRATION has been deprecated in favor of Z_STEPPER_AUTO_ALIGN. Please update your configuration."
 #endif
 
 #define BOARD_MKS_13     -47
@@ -421,8 +425,8 @@
 /**
  * Validate that the bed size fits
  */
-static_assert(X_MAX_LENGTH >= X_BED_SIZE && Y_MAX_LENGTH >= Y_BED_SIZE,
-  "Movement bounds ([XY]_MIN_POS, [XY]_MAX_POS) are too narrow to contain [XY]_BED_SIZE.");
+static_assert(X_MAX_LENGTH >= X_BED_SIZE, "Movement bounds (X_MIN_POS, X_MAX_POS) are too narrow to contain X_BED_SIZE.");
+static_assert(Y_MAX_LENGTH >= Y_BED_SIZE, "Movement bounds (Y_MIN_POS, Y_MAX_POS) are too narrow to contain Y_BED_SIZE.");
 
 /**
  * Granular software endstops (Marlin >= 1.1.7)
@@ -498,8 +502,8 @@ static_assert(X_MAX_LENGTH >= X_BED_SIZE && Y_MAX_LENGTH >= Y_BED_SIZE,
   #elif PROGRESS_MSG_EXPIRE < 0
     #error "PROGRESS_MSG_EXPIRE must be greater than or equal to 0."
   #endif
-#elif ENABLED(LCD_SET_PROGRESS_MANUALLY) && !HAS_GRAPHICAL_LCD
-  #error "LCD_SET_PROGRESS_MANUALLY requires LCD_PROGRESS_BAR or Graphical LCD."
+#elif ENABLED(LCD_SET_PROGRESS_MANUALLY) && !HAS_GRAPHICAL_LCD && DISABLED(EXTENSIBLE_UI)
+  #error "LCD_SET_PROGRESS_MANUALLY requires LCD_PROGRESS_BAR, Graphical LCD, or EXTENSIBLE_UI."
 #endif
 
 /**
@@ -507,6 +511,13 @@ static_assert(X_MAX_LENGTH >= X_BED_SIZE && Y_MAX_LENGTH >= Y_BED_SIZE,
  */
 #if DISABLED(DOGLCD) && (ENABLED(SHOW_CUSTOM_BOOTSCREEN) || ENABLED(CUSTOM_STATUS_SCREEN_IMAGE))
   #error "Graphical LCD is required for SHOW_CUSTOM_BOOTSCREEN and CUSTOM_STATUS_SCREEN_IMAGE."
+#endif
+
+/**
+ * LCD Lightweight Screen Style
+ */
+#if ENABLED(LIGHTWEIGHT_UI) && DISABLED(U8GLIB_ST7920)
+  #error "LIGHTWEIGHT_UI requires a U8GLIB_ST7920-based display."
 #endif
 
 /**
@@ -691,6 +702,10 @@ static_assert(X_MAX_LENGTH >= X_BED_SIZE && Y_MAX_LENGTH >= Y_BED_SIZE,
     #error "SWITCHING_NOZZLE requires exactly 2 EXTRUDERS."
   #elif NUM_SERVOS < 1
     #error "SWITCHING_NOZZLE requires NUM_SERVOS >= 1."
+  #endif
+
+  #ifndef SWITCHING_NOZZLE_SERVO_NR
+    #error "SWITCHING_NOZZLE requires SWITCHING_NOZZLE_SERVO_NR."
   #elif SWITCHING_NOZZLE_SERVO_NR == 0 && !PIN_EXISTS(SERVO0)
     #error "SERVO0_PIN must be defined for your SWITCHING_NOZZLE."
   #elif SWITCHING_NOZZLE_SERVO_NR == 1 && !PIN_EXISTS(SERVO1)
@@ -699,6 +714,20 @@ static_assert(X_MAX_LENGTH >= X_BED_SIZE && Y_MAX_LENGTH >= Y_BED_SIZE,
     #error "SERVO2_PIN must be defined for your SWITCHING_NOZZLE."
   #elif SWITCHING_NOZZLE_SERVO_NR == 3 && !PIN_EXISTS(SERVO3)
     #error "SERVO3_PIN must be defined for your SWITCHING_NOZZLE."
+  #endif
+
+  #ifdef SWITCHING_NOZZLE_E1_SERVO_NR
+    #if SWITCHING_NOZZLE_E1_SERVO_NR == SWITCHING_NOZZLE_SERVO_NR
+      #error "SWITCHING_NOZZLE_E1_SERVO_NR must be different from SWITCHING_NOZZLE_SERVO_NR."
+    #elif SWITCHING_NOZZLE_E1_SERVO_NR == 0 && !PIN_EXISTS(SERVO0)
+      #error "SERVO0_PIN must be defined for your SWITCHING_NOZZLE."
+    #elif SWITCHING_NOZZLE_E1_SERVO_NR == 1 && !PIN_EXISTS(SERVO1)
+      #error "SERVO1_PIN must be defined for your SWITCHING_NOZZLE."
+    #elif SWITCHING_NOZZLE_E1_SERVO_NR == 2 && !PIN_EXISTS(SERVO2)
+      #error "SERVO2_PIN must be defined for your SWITCHING_NOZZLE."
+    #elif SWITCHING_NOZZLE_E1_SERVO_NR == 3 && !PIN_EXISTS(SERVO3)
+      #error "SERVO3_PIN must be defined for your SWITCHING_NOZZLE."
+    #endif
   #endif
 #endif
 
@@ -1113,7 +1142,9 @@ static_assert(X_MAX_LENGTH >= X_BED_SIZE && Y_MAX_LENGTH >= Y_BED_SIZE,
 #endif
 
 #if HAS_MESH
-  static_assert(DEFAULT_ZJERK > 0.1, "Low DEFAULT_ZJERK values are incompatible with mesh-based leveling.");
+  #if DISABLED(JUNCTION_DEVIATION)
+    static_assert(DEFAULT_ZJERK > 0.1, "Low DEFAULT_ZJERK values are incompatible with mesh-based leveling.");
+  #endif
 #elif ENABLED(G26_MESH_VALIDATION)
   #error "G26_MESH_VALIDATION requires MESH_BED_LEVELING, AUTO_BED_LEVELING_BILINEAR, or AUTO_BED_LEVELING_UBL."
 #endif
@@ -1285,7 +1316,7 @@ static_assert(X_MAX_LENGTH >= X_BED_SIZE && Y_MAX_LENGTH >= Y_BED_SIZE,
   #error "TEMP_0_PIN not defined for this board."
 #elif ((defined(__AVR_ATmega644P__) || defined(__AVR_ATmega1284P__)) && (!PIN_EXISTS(E0_STEP) || !PIN_EXISTS(E0_DIR)))
   #error "E0_STEP_PIN or E0_DIR_PIN not defined for this board."
-#elif ( !(defined(__AVR_ATmega644P__) || defined(__AVR_ATmega1284P__)) && (!PIN_EXISTS(E0_STEP) || !PIN_EXISTS(E0_DIR) || !PIN_EXISTS(E0_ENABLE)))
+#elif ( !(defined(__AVR_ATmega644P__) || defined(__AVR_ATmega1284P__)) && (!PIN_EXISTS(E0_STEP) || !PIN_EXISTS(E0_DIR) || !HAS_E0_ENABLE))
   #error "E0_STEP_PIN, E0_DIR_PIN, or E0_ENABLE_PIN not defined for this board."
 #elif TEMP_SENSOR_0 == 0
   #error "TEMP_SENSOR_0 is required."
@@ -1414,27 +1445,27 @@ static_assert(X_MAX_LENGTH >= X_BED_SIZE && Y_MAX_LENGTH >= Y_BED_SIZE,
  */
 #if DISABLED(MK2_MULTIPLEXER) // MK2_MULTIPLEXER uses E0 stepper only
   #if E_STEPPERS
-    #if !(PIN_EXISTS(E0_STEP) && PIN_EXISTS(E0_DIR) && PIN_EXISTS(E0_ENABLE))
+    #if !(PIN_EXISTS(E0_STEP) && PIN_EXISTS(E0_DIR) && HAS_E0_ENABLE)
       #error "E0_STEP_PIN, E0_DIR_PIN, or E0_ENABLE_PIN not defined for this board."
     #endif
     #if E_STEPPERS > 1
-      #if !(PIN_EXISTS(E1_STEP) && PIN_EXISTS(E1_DIR) && PIN_EXISTS(E1_ENABLE))
+      #if !(PIN_EXISTS(E1_STEP) && PIN_EXISTS(E1_DIR) && HAS_E1_ENABLE)
         #error "E1_STEP_PIN, E1_DIR_PIN, or E1_ENABLE_PIN not defined for this board."
       #endif
       #if E_STEPPERS > 2
-        #if !(PIN_EXISTS(E2_STEP) && PIN_EXISTS(E2_DIR) && PIN_EXISTS(E2_ENABLE))
+        #if !(PIN_EXISTS(E2_STEP) && PIN_EXISTS(E2_DIR) && HAS_E2_ENABLE)
           #error "E2_STEP_PIN, E2_DIR_PIN, or E2_ENABLE_PIN not defined for this board."
         #endif
         #if E_STEPPERS > 3
-          #if !(PIN_EXISTS(E3_STEP) && PIN_EXISTS(E3_DIR) && PIN_EXISTS(E3_ENABLE))
+          #if !(PIN_EXISTS(E3_STEP) && PIN_EXISTS(E3_DIR) && HAS_E3_ENABLE)
             #error "E3_STEP_PIN, E3_DIR_PIN, or E3_ENABLE_PIN not defined for this board."
           #endif
           #if E_STEPPERS > 4
-            #if !(PIN_EXISTS(E4_STEP) && PIN_EXISTS(E4_DIR) && PIN_EXISTS(E4_ENABLE))
+            #if !(PIN_EXISTS(E4_STEP) && PIN_EXISTS(E4_DIR) && HAS_E4_ENABLE)
               #error "E4_STEP_PIN, E4_DIR_PIN, or E4_ENABLE_PIN not defined for this board."
             #endif
             #if E_STEPPERS > 5
-              #if !(PIN_EXISTS(E5_STEP) && PIN_EXISTS(E5_DIR) && PIN_EXISTS(E5_ENABLE))
+              #if !(PIN_EXISTS(E5_STEP) && PIN_EXISTS(E5_DIR) && HAS_E5_ENABLE)
                 #error "E5_STEP_PIN, E5_DIR_PIN, or E5_ENABLE_PIN not defined for this board."
               #endif
             #endif // E_STEPPERS > 5
@@ -1833,8 +1864,8 @@ static_assert(X_MAX_LENGTH >= X_BED_SIZE && Y_MAX_LENGTH >= Y_BED_SIZE,
   // is necessary in order to reset the stallGuard indication between the initial movement of all three
   // towers to +Z and the individual homing of each tower. This restriction can be removed once a means of
   // clearing the stallGuard activated status is found.
-  #if ENABLED(DELTA) && DISABLED(STEALTHCHOP)
-    #error "SENSORLESS_HOMING on DELTA currently requires STEALTHCHOP."
+  #if ENABLED(DELTA) && !(ENABLED(STEALTHCHOP_XY) && ENABLED(STEALTHCHOP_Z))
+    #error "SENSORLESS_HOMING on DELTA currently requires STEALTHCHOP_XY and STEALTHCHOP_Z."
   #elif X_SENSORLESS && X_HOME_DIR == -1 && (!X_MIN_ENDSTOP_INVERTING || DISABLED(ENDSTOPPULLUP_XMIN))
     #error "SENSORLESS_HOMING requires X_MIN_ENDSTOP_INVERTING and ENDSTOPPULLUP_XMIN when homing to X_MIN."
   #elif X_SENSORLESS && X_HOME_DIR ==  1 && (!X_MAX_ENDSTOP_INVERTING || DISABLED(ENDSTOPPULLUP_XMAX))
@@ -1871,16 +1902,18 @@ static_assert(X_MAX_LENGTH >= X_BED_SIZE && Y_MAX_LENGTH >= Y_BED_SIZE,
 #endif
 
 // Other TMC feature requirements
-#if ENABLED(HYBRID_THRESHOLD) && DISABLED(STEALTHCHOP)
-  #error "Enable STEALTHCHOP to use HYBRID_THRESHOLD."
-#elif ENABLED(TMC_Z_CALIBRATION) && !AXIS_IS_TMC(Z) && !AXIS_IS_TMC(Z2) && !AXIS_IS_TMC(Z3)
-  #error "TMC_Z_CALIBRATION requires at least one TMC driver on Z axis"
+#if ENABLED(HYBRID_THRESHOLD) && !STEALTHCHOP_ENABLED
+  #error "Enable STEALTHCHOP_(XY|Z|E) to use HYBRID_THRESHOLD."
 #elif ENABLED(SENSORLESS_HOMING) && !HAS_STALLGUARD
   #error "SENSORLESS_HOMING requires TMC2130 stepper drivers."
 #elif ENABLED(SENSORLESS_PROBING) && !HAS_STALLGUARD
   #error "SENSORLESS_PROBING requires TMC2130 stepper drivers."
-#elif ENABLED(STEALTHCHOP) && !HAS_STEALTHCHOP
+#elif STEALTHCHOP_ENABLED && !HAS_STEALTHCHOP
   #error "STEALTHCHOP requires TMC2130 or TMC2208 stepper drivers."
+#endif
+
+#if ENABLED(DELTA) && (ENABLED(STEALTHCHOP_XY) != ENABLED(STEALTHCHOP_Z))
+  #error "STEALTHCHOP_XY and STEALTHCHOP_Z must be the same on DELTA."
 #endif
 
 /**
@@ -1894,17 +1927,35 @@ static_assert(X_MAX_LENGTH >= X_BED_SIZE && Y_MAX_LENGTH >= Y_BED_SIZE,
 #endif
 
 /**
- * Require 4 or more elements in per-axis initializers
+ * Check per-axis initializers for errors
  */
 constexpr float sanity_arr_1[] = DEFAULT_AXIS_STEPS_PER_UNIT,
                 sanity_arr_2[] = DEFAULT_MAX_FEEDRATE,
                 sanity_arr_3[] = DEFAULT_MAX_ACCELERATION;
+
 static_assert(COUNT(sanity_arr_1) >= XYZE, "DEFAULT_AXIS_STEPS_PER_UNIT requires 4 (or more) elements.");
-static_assert(COUNT(sanity_arr_2) >= XYZE, "DEFAULT_MAX_FEEDRATE requires 4 (or more) elements.");
-static_assert(COUNT(sanity_arr_3) >= XYZE, "DEFAULT_MAX_ACCELERATION requires 4 (or more) elements.");
 static_assert(COUNT(sanity_arr_1) <= XYZE_N, "DEFAULT_AXIS_STEPS_PER_UNIT has too many elements. (Did you forget to enable DISTINCT_E_FACTORS?)");
+static_assert(sanity_arr_1[0] > 0 && sanity_arr_1[1] > 0 && sanity_arr_1[2] > 0
+  && (XYZE_N <= 3 || sanity_arr_1[3] > 0) && (XYZE_N <= 4 || sanity_arr_1[4] > 0)
+  && (XYZE_N <= 5 || sanity_arr_1[5] > 0) && (XYZE_N <= 6 || sanity_arr_1[6] > 0)
+  && (XYZE_N <= 7 || sanity_arr_1[7] > 0) && (XYZE_N <= 8 || sanity_arr_1[8] > 0),
+  "DEFAULT_AXIS_STEPS_PER_UNIT values must be positive.");
+
+static_assert(COUNT(sanity_arr_2) >= XYZE, "DEFAULT_MAX_FEEDRATE requires 4 (or more) elements.");
 static_assert(COUNT(sanity_arr_2) <= XYZE_N, "DEFAULT_MAX_FEEDRATE has too many elements. (Did you forget to enable DISTINCT_E_FACTORS?)");
+static_assert(sanity_arr_2[0] > 0 && sanity_arr_2[1] > 0 && sanity_arr_2[2] > 0
+  && (XYZE_N <= 3 || sanity_arr_2[3] > 0) && (XYZE_N <= 4 || sanity_arr_2[4] > 0)
+  && (XYZE_N <= 5 || sanity_arr_2[5] > 0) && (XYZE_N <= 6 || sanity_arr_2[6] > 0)
+  && (XYZE_N <= 7 || sanity_arr_2[7] > 0) && (XYZE_N <= 8 || sanity_arr_2[8] > 0),
+  "DEFAULT_MAX_FEEDRATE values must be positive.");
+
+static_assert(COUNT(sanity_arr_3) >= XYZE, "DEFAULT_MAX_ACCELERATION requires 4 (or more) elements.");
 static_assert(COUNT(sanity_arr_3) <= XYZE_N, "DEFAULT_MAX_ACCELERATION has too many elements. (Did you forget to enable DISTINCT_E_FACTORS?)");
+static_assert(sanity_arr_3[0] > 0 && sanity_arr_3[1] > 0 && sanity_arr_3[2] > 0
+  && (XYZE_N <= 3 || sanity_arr_3[3] > 0) && (XYZE_N <= 4 || sanity_arr_3[4] > 0)
+  && (XYZE_N <= 5 || sanity_arr_3[5] > 0) && (XYZE_N <= 6 || sanity_arr_3[6] > 0)
+  && (XYZE_N <= 7 || sanity_arr_3[7] > 0) && (XYZE_N <= 8 || sanity_arr_3[8] > 0),
+  "DEFAULT_MAX_ACCELERATION values must be positive.");
 
 #if ENABLED(CNC_COORDINATE_SYSTEMS) && ENABLED(NO_WORKSPACE_OFFSETS)
   #error "CNC_COORDINATE_SYSTEMS is incompatible with NO_WORKSPACE_OFFSETS."
@@ -1971,4 +2022,44 @@ static_assert(COUNT(sanity_arr_3) <= XYZE_N, "DEFAULT_MAX_ACCELERATION has too m
 
 #if ENABLED(GCODE_MACROS) && !WITHIN(GCODE_MACROS_SLOTS, 1, 10)
   #error "GCODE_MACROS_SLOTS must be a number from 1 to 10."
+#endif
+
+#if ENABLED(CUSTOM_USER_MENUS)
+  #ifdef USER_GCODE_1
+    constexpr char _chr1 = USER_GCODE_1[strlen(USER_GCODE_1) - 1];
+    static_assert(_chr1 != '\n' && _chr1 != '\r', "USER_GCODE_1 cannot have a newline at the end. Please remove it.");
+  #endif
+  #ifdef USER_GCODE_2
+    constexpr char _chr2 = USER_GCODE_2[strlen(USER_GCODE_2) - 1];
+    static_assert(_chr2 != '\n' && _chr2 != '\r', "USER_GCODE_2 cannot have a newline at the end. Please remove it.");
+  #endif
+  #ifdef USER_GCODE_3
+    constexpr char _chr3 = USER_GCODE_3[strlen(USER_GCODE_3) - 1];
+    static_assert(_chr3 != '\n' && _chr3 != '\r', "USER_GCODE_3 cannot have a newline at the end. Please remove it.");
+  #endif
+  #ifdef USER_GCODE_4
+    constexpr char _chr4 = USER_GCODE_4[strlen(USER_GCODE_4) - 1];
+    static_assert(_chr4 != '\n' && _chr4 != '\r', "USER_GCODE_4 cannot have a newline at the end. Please remove it.");
+  #endif
+  #ifdef USER_GCODE_5
+    constexpr char _chr5 = USER_GCODE_5[strlen(USER_GCODE_5) - 1];
+    static_assert(_chr5 != '\n' && _chr5 != '\r', "USER_GCODE_5 cannot have a newline at the end. Please remove it.");
+  #endif
+#endif
+
+#if ENABLED(BACKLASH_COMPENSATION) && IS_CORE
+  #error "BACKLASH_COMPENSATION is incompatible with CORE kinematics."
+#endif
+
+/**
+ * Prusa MMU2 requirements
+ */
+#if ENABLED(PRUSA_MMU2)
+  #if DISABLED(NOZZLE_PARK_FEATURE)
+    #error "PRUSA_MMU2 requires NOZZLE_PARK_FEATURE."
+  #elif EXTRUDERS != 5
+    #error "PRUSA_MMU2 requires EXTRUDERS = 5."
+  #elif DISABLED(ADVANCED_PAUSE_FEATURE)
+    static_assert(NULL == strstr(MMU2_FILAMENT_RUNOUT_SCRIPT, "M600"), "ADVANCED_PAUSE_FEATURE is required to use M600 with PRUSA_MMU2.");
+  #endif
 #endif

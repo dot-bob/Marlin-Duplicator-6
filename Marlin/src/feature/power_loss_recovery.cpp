@@ -84,8 +84,8 @@ void PrintJobRecovery::changed() {
  */
 void PrintJobRecovery::check() {
   if (enabled) {
-    if (!card.flag.cardOK) card.initsd();
-    if (card.flag.cardOK) {
+    if (!card.isDetected()) card.initsd();
+    if (card.isDetected()) {
       load();
       if (!valid()) return purge();
       enqueue_and_echo_commands_P(PSTR("M1000 S"));
@@ -118,7 +118,7 @@ void PrintJobRecovery::load() {
 /**
  * Save the current machine state to the power-loss recovery file
  */
-void PrintJobRecovery::save(const bool force/*=false*/) {
+void PrintJobRecovery::save(const bool force/*=false*/, const bool save_queue/*=true*/) {
 
   #if SAVE_INFO_INTERVAL_MS > 0
     static millis_t next_save_ms; // = 0
@@ -162,7 +162,7 @@ void PrintJobRecovery::save(const bool force/*=false*/) {
     #endif
 
     #if FAN_COUNT
-      COPY(info.fan_speed, fan_speed);
+      COPY(info.fan_speed, thermalManager.fan_speed);
     #endif
 
     #if HAS_LEVELING
@@ -182,8 +182,8 @@ void PrintJobRecovery::save(const bool force/*=false*/) {
     #endif
 
     // Commands in the queue
+    info.commands_in_queue = save_queue ? commands_in_queue : 0;
     info.cmd_queue_index_r = cmd_queue_index_r;
-    info.commands_in_queue = commands_in_queue;
     COPY(info.command_queue, command_queue);
 
     // Elapsed print job time
@@ -235,7 +235,7 @@ void PrintJobRecovery::resume() {
 
   // Set Z to 0, raise Z by 2mm, and Home (XY only for Cartesian) with no raise
   // (Only do simulated homing in Marlin Dev Mode.)
-  gcode.process_subcommands_now_P(PSTR("G92.0 Z0|G1 Z" STRINGIFY(RECOVERY_ZRAISE) "|G28 R0"
+  gcode.process_subcommands_now_P(PSTR("G92.0 Z0\nG1 Z" STRINGIFY(RECOVERY_ZRAISE) "\nG28 R0"
     #if ENABLED(MARLIN_DEV_MODE)
       " S"
     #elif !IS_KINEMATIC
@@ -277,7 +277,7 @@ void PrintJobRecovery::resume() {
   }
 
   // Restore print cooling fan speeds
-  for (uint8_t i = 0; i < FAN_COUNT; i++) {
+  FANS_LOOP(i) {
     uint8_t f = info.fan_speed[i];
     if (f) {
       sprintf_P(cmd, PSTR("M106 P%i S%i"), i, f);
@@ -332,7 +332,7 @@ void PrintJobRecovery::resume() {
   gcode.process_subcommands_now(cmd);
 
   // Process commands from the old pending queue
-  uint8_t r = info.cmd_queue_index_r, c = info.commands_in_queue;
+  uint8_t c = info.commands_in_queue, r = info.cmd_queue_index_r;
   for (; c--; r = (r + 1) % BUFSIZE)
     gcode.process_subcommands_now(info.command_queue[r]);
 

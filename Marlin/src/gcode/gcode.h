@@ -191,6 +191,7 @@
  * M400 - Finish all moves.
  * M401 - Deploy and activate Z probe. (Requires a probe)
  * M402 - Deactivate and stow Z probe. (Requires a probe)
+ * M403 - Set filament type for PRUSA MMU2
  * M404 - Display or set the Nominal Filament Width: "W<diameter>". (Requires FILAMENT_WIDTH_SENSOR)
  * M405 - Enable Filament Sensor flow control. "M405 D<delay_cm>". (Requires FILAMENT_WIDTH_SENSOR)
  * M406 - Disable Filament Sensor flow control. (Requires FILAMENT_WIDTH_SENSOR)
@@ -201,6 +202,7 @@
  * M420 - Enable/Disable Leveling (with current values) S1=enable S0=disable (Requires MESH_BED_LEVELING or ABL)
  * M421 - Set a single Z coordinate in the Mesh Leveling grid. X<units> Y<units> Z<units> (Requires MESH_BED_LEVELING, AUTO_BED_LEVELING_BILINEAR, or AUTO_BED_LEVELING_UBL)
  * M422 - Set Z Stepper automatic alignment position using probe. X<units> Y<units> A<axis> (Requires Z_STEPPER_AUTO_ALIGN)
+ * M425 - Enable/Disable and tune backlash correction. (Requires BACKLASH_COMPENSATION and BACKLASH_GCODE)
  * M428 - Set the home_offset based on the current_position. Nearest edge applies. (Disabled by NO_WORKSPACE_OFFSETS or DELTA)
  * M500 - Store parameters in EEPROM. (Requires EEPROM_SETTINGS)
  * M501 - Restore parameters from EEPROM. (Requires EEPROM_SETTINGS)
@@ -208,6 +210,7 @@
  * M503 - Print the current settings (in memory): "M503 S<verbose>". S0 specifies compact output.
  * M524 - Abort the current SD print job (started with M24)
  * M540 - Enable/disable SD card abort on endstop hit: "M540 S<state>". (Requires ABORT_ON_ENDSTOP_HIT_FEATURE_ENABLED)
+ * M569 - Enable stealthChop on an axis. (Requires at least one #_X_DRIVER_TYPE to be TMC2130 or TMC2208)
  * M600 - Pause for filament change: "M600 X<pos> Y<pos> Z<raise> E<first_retract> L<later_retract>". (Requires ADVANCED_PAUSE_FEATURE)
  * M603 - Configure filament change: "M603 T<tool> U<unload_length> L<load_length>". (Requires ADVANCED_PAUSE_FEATURE)
  * M605 - Set Dual X-Carriage movement mode: "M605 S<mode> [X<x_offset>] [R<temp_offset>]". (Requires DUAL_X_CARRIAGE)
@@ -238,6 +241,8 @@
  * M912 - Clear stepper driver overtemperature pre-warn condition flag. (Requires at least one _DRIVER_TYPE defined as TMC2130/TMC2208/TMC2660)
  * M913 - Set HYBRID_THRESHOLD speed. (Requires HYBRID_THRESHOLD)
  * M914 - Set StallGuard sensitivity. (Requires SENSORLESS_HOMING or SENSORLESS_PROBING)
+ * M917 - L6470 tuning: Find minimum current thresholds
+ * M918 - L6470 tuning: Increase speed until max or error
  *
  * M360 - SCARA calibration: Move to cal-position ThetaA (0 deg calibration)
  * M361 - SCARA calibration: Move to cal-position ThetaB (90 deg calibration - steps per degree)
@@ -435,7 +440,7 @@ private:
   #endif
 
   #if ENABLED(SPINDLE_LASER_ENABLE)
-    static void M3_M4(bool is_M3);
+    static void M3_M4(const bool is_M4);
     static void M5();
   #endif
 
@@ -487,7 +492,7 @@ private:
     static void M49();
   #endif
 
-  #if ENABLED(ULTRA_LCD) && ENABLED(LCD_SET_PROGRESS_MANUALLY)
+  #if ENABLED(LCD_SET_PROGRESS_MANUALLY)
     static void M73();
   #endif
 
@@ -671,7 +676,9 @@ private:
     static void M351();
   #endif
 
-  static void M355();
+  #if HAS_CASE_LIGHT
+    static void M355();
+  #endif
 
   #if ENABLED(MORGAN_SCARA)
     static bool M360();
@@ -693,6 +700,10 @@ private:
     static void M402();
   #endif
 
+  #if ENABLED(PRUSA_MMU2)
+    static void M403();
+  #endif
+
   #if ENABLED(FILAMENT_WIDTH_SENSOR)
     static void M404();
     static void M405();
@@ -707,6 +718,10 @@ private:
   #if HAS_LEVELING
     static void M420();
     static void M421();
+  #endif
+
+  #if ENABLED(BACKLASH_GCODE)
+    static void M425();
   #endif
 
   #if HAS_M206_COMMAND
@@ -787,10 +802,11 @@ private:
   #endif
 
   #if HAS_TRINAMIC
-    #if ENABLED(TMC_DEBUG)
-      static void M122();
-    #endif
+    static void M122();
     static void M906();
+    #if HAS_STEALTHCHOP
+      static void M569();
+    #endif
     #if ENABLED(MONITOR_DRIVER_STATUS)
       static void M911();
       static void M912();
@@ -801,9 +817,14 @@ private:
     #if USE_SENSORLESS
       static void M914();
     #endif
-    #if ENABLED(TMC_Z_CALIBRATION)
-      static void M915();
-    #endif
+  #endif
+
+  #if HAS_DRIVER(L6470)
+    static void M122();
+    static void M906();
+    static void M916();
+    static void M917();
+    static void M918();
   #endif
 
   #if HAS_DIGIPOTSS || HAS_MOTOR_CURRENT_PWM || ENABLED(DIGIPOT_I2C) || ENABLED(DAC_STEPPER_CURRENT)

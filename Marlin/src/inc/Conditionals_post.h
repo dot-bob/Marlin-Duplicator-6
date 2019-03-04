@@ -145,7 +145,7 @@
   #if ENABLED(DELTA)
     #define X_HOME_POS 0
   #else
-    #define X_HOME_POS ((X_BED_SIZE) * (X_HOME_DIR) * 0.5)
+    #define X_HOME_POS (X_HOME_DIR < 0 ? X_MIN_POS : X_MAX_POS)
   #endif
 #else
   #if ENABLED(DELTA)
@@ -161,7 +161,7 @@
   #if ENABLED(DELTA)
     #define Y_HOME_POS 0
   #else
-    #define Y_HOME_POS ((Y_BED_SIZE) * (Y_HOME_DIR) * 0.5)
+    #define Y_HOME_POS (Y_HOME_DIR < 0 ? Y_MIN_POS : Y_MAX_POS)
   #endif
 #else
   #if ENABLED(DELTA)
@@ -779,73 +779,73 @@
  */
 
 // Steppers
-#define HAS_X_ENABLE      (PIN_EXISTS(X_ENABLE))
+#define HAS_X_ENABLE      (PIN_EXISTS(X_ENABLE) || (ENABLED(SOFTWARE_DRIVER_ENABLE) && AXIS_IS_TMC(X)))
 #define HAS_X_DIR         (PIN_EXISTS(X_DIR))
 #define HAS_X_STEP        (PIN_EXISTS(X_STEP))
 #define HAS_X_MICROSTEPS  (PIN_EXISTS(X_MS1))
 
-#define HAS_X2_ENABLE     (PIN_EXISTS(X2_ENABLE))
+#define HAS_X2_ENABLE     (PIN_EXISTS(X2_ENABLE) || (ENABLED(SOFTWARE_DRIVER_ENABLE) && AXIS_IS_TMC(X2)))
 #define HAS_X2_DIR        (PIN_EXISTS(X2_DIR))
 #define HAS_X2_STEP       (PIN_EXISTS(X2_STEP))
 #define HAS_X2_MICROSTEPS (PIN_EXISTS(X2_MS1))
 
-#define HAS_Y_ENABLE      (PIN_EXISTS(Y_ENABLE))
+#define HAS_Y_ENABLE      (PIN_EXISTS(Y_ENABLE) || (ENABLED(SOFTWARE_DRIVER_ENABLE) && AXIS_IS_TMC(Y)))
 #define HAS_Y_DIR         (PIN_EXISTS(Y_DIR))
 #define HAS_Y_STEP        (PIN_EXISTS(Y_STEP))
 #define HAS_Y_MICROSTEPS  (PIN_EXISTS(Y_MS1))
 
-#define HAS_Y2_ENABLE     (PIN_EXISTS(Y2_ENABLE))
+#define HAS_Y2_ENABLE     (PIN_EXISTS(Y2_ENABLE) || (ENABLED(SOFTWARE_DRIVER_ENABLE) && AXIS_IS_TMC(Y2)))
 #define HAS_Y2_DIR        (PIN_EXISTS(Y2_DIR))
 #define HAS_Y2_STEP       (PIN_EXISTS(Y2_STEP))
 #define HAS_Y2_MICROSTEPS (PIN_EXISTS(Y2_MS1))
 
-#define HAS_Z_ENABLE      (PIN_EXISTS(Z_ENABLE))
+#define HAS_Z_ENABLE      (PIN_EXISTS(Z_ENABLE) || (ENABLED(SOFTWARE_DRIVER_ENABLE) && AXIS_IS_TMC(Z)))
 #define HAS_Z_DIR         (PIN_EXISTS(Z_DIR))
 #define HAS_Z_STEP        (PIN_EXISTS(Z_STEP))
 #define HAS_Z_MICROSTEPS  (PIN_EXISTS(Z_MS1))
 
-#define HAS_Z2_ENABLE     (PIN_EXISTS(Z2_ENABLE))
+#define HAS_Z2_ENABLE     (PIN_EXISTS(Z2_ENABLE) || (ENABLED(SOFTWARE_DRIVER_ENABLE) && AXIS_IS_TMC(Z2)))
 #define HAS_Z2_DIR        (PIN_EXISTS(Z2_DIR))
 #define HAS_Z2_STEP       (PIN_EXISTS(Z2_STEP))
 #define HAS_Z2_MICROSTEPS (PIN_EXISTS(Z2_MS1))
 
-#define HAS_Z3_ENABLE     (PIN_EXISTS(Z3_ENABLE))
+#define HAS_Z3_ENABLE     (PIN_EXISTS(Z3_ENABLE) || (ENABLED(SOFTWARE_DRIVER_ENABLE) && AXIS_IS_TMC(Z3)))
 #define HAS_Z3_DIR        (PIN_EXISTS(Z3_DIR))
 #define HAS_Z3_STEP       (PIN_EXISTS(Z3_STEP))
 #define HAS_Z3_MICROSTEPS (PIN_EXISTS(Z3_MS1))
 
 // Extruder steppers and solenoids
-#define HAS_E0_ENABLE     (PIN_EXISTS(E0_ENABLE))
+#define HAS_E0_ENABLE     (PIN_EXISTS(E0_ENABLE) || (ENABLED(SOFTWARE_DRIVER_ENABLE) && AXIS_IS_TMC(E0)))
 #define HAS_E0_DIR        (PIN_EXISTS(E0_DIR))
 #define HAS_E0_STEP       (PIN_EXISTS(E0_STEP))
 #define HAS_E0_MICROSTEPS (PIN_EXISTS(E0_MS1))
 #define HAS_SOLENOID_0    (PIN_EXISTS(SOL0))
 
-#define HAS_E1_ENABLE     (PIN_EXISTS(E1_ENABLE))
+#define HAS_E1_ENABLE     (PIN_EXISTS(E1_ENABLE) || (ENABLED(SOFTWARE_DRIVER_ENABLE) && AXIS_IS_TMC(E1)))
 #define HAS_E1_DIR        (PIN_EXISTS(E1_DIR))
 #define HAS_E1_STEP       (PIN_EXISTS(E1_STEP))
 #define HAS_E1_MICROSTEPS (PIN_EXISTS(E1_MS1))
 #define HAS_SOLENOID_1    (PIN_EXISTS(SOL1))
 
-#define HAS_E2_ENABLE     (PIN_EXISTS(E2_ENABLE))
+#define HAS_E2_ENABLE     (PIN_EXISTS(E2_ENABLE) || (ENABLED(SOFTWARE_DRIVER_ENABLE) && AXIS_IS_TMC(E2)))
 #define HAS_E2_DIR        (PIN_EXISTS(E2_DIR))
 #define HAS_E2_STEP       (PIN_EXISTS(E2_STEP))
 #define HAS_E2_MICROSTEPS (PIN_EXISTS(E2_MS1))
 #define HAS_SOLENOID_2    (PIN_EXISTS(SOL2))
 
-#define HAS_E3_ENABLE     (PIN_EXISTS(E3_ENABLE))
+#define HAS_E3_ENABLE     (PIN_EXISTS(E3_ENABLE) || (ENABLED(SOFTWARE_DRIVER_ENABLE) && AXIS_IS_TMC(E3)))
 #define HAS_E3_DIR        (PIN_EXISTS(E3_DIR))
 #define HAS_E3_STEP       (PIN_EXISTS(E3_STEP))
 #define HAS_E3_MICROSTEPS (PIN_EXISTS(E3_MS1))
 #define HAS_SOLENOID_3    (PIN_EXISTS(SOL3))
 
-#define HAS_E4_ENABLE     (PIN_EXISTS(E4_ENABLE))
+#define HAS_E4_ENABLE     (PIN_EXISTS(E4_ENABLE) || (ENABLED(SOFTWARE_DRIVER_ENABLE) && AXIS_IS_TMC(E4)))
 #define HAS_E4_DIR        (PIN_EXISTS(E4_DIR))
 #define HAS_E4_STEP       (PIN_EXISTS(E4_STEP))
 #define HAS_E4_MICROSTEPS (PIN_EXISTS(E4_MS1))
 #define HAS_SOLENOID_4    (PIN_EXISTS(SOL4))
 
-#define HAS_E5_ENABLE     (PIN_EXISTS(E5_ENABLE))
+#define HAS_E5_ENABLE     (PIN_EXISTS(E5_ENABLE) || (ENABLED(SOFTWARE_DRIVER_ENABLE) && AXIS_IS_TMC(E5)))
 #define HAS_E5_DIR        (PIN_EXISTS(E5_DIR))
 #define HAS_E5_STEP       (PIN_EXISTS(E5_STEP))
 #define HAS_E5_MICROSTEPS (PIN_EXISTS(E5_MS1))
@@ -860,6 +860,7 @@
   #define AXIS_HAS_STALLGUARD(ST)  (AXIS_DRIVER_TYPE(ST, TMC2130) || AXIS_DRIVER_TYPE(ST, TMC2660))
   #define AXIS_HAS_STEALTHCHOP(ST) (AXIS_DRIVER_TYPE(ST, TMC2130) || AXIS_DRIVER_TYPE(ST, TMC2208))
 
+  #define STEALTHCHOP_ENABLED (ENABLED(STEALTHCHOP_XY) || ENABLED(STEALTHCHOP_Z) || ENABLED(STEALTHCHOP_E))
   #define USE_SENSORLESS (ENABLED(SENSORLESS_HOMING) || ENABLED(SENSORLESS_PROBING))
   // Disable Z axis sensorless homing if a probe is used to home the Z axis
   #if HOMING_Z_WITH_PROBE
@@ -972,6 +973,12 @@
 
 #if HAS_SERVOS && !defined(Z_PROBE_SERVO_NR)
   #define Z_PROBE_SERVO_NR -1
+#endif
+
+#define HAS_SERVO_ANGLES (ENABLED(SWITCHING_EXTRUDER) || ENABLED(SWITCHING_NOZZLE) || (HAS_Z_SERVO_PROBE && defined(Z_PROBE_SERVO_NR)))
+
+#if !HAS_SERVO_ANGLES
+  #undef EDITABLE_SERVO_ANGLES
 #endif
 
 // Sensors
@@ -1208,34 +1215,28 @@
   #define _SKEW_FACTOR(a,b,c) _SKEW_SIDE(float(a),_GET_SIDE(float(a),float(b),float(c)),float(c))
 
   #ifndef XY_SKEW_FACTOR
-    constexpr float XY_SKEW_FACTOR = (
-      #if defined(XY_DIAG_AC) && defined(XY_DIAG_BD) && defined(XY_SIDE_AD)
-        _SKEW_FACTOR(XY_DIAG_AC, XY_DIAG_BD, XY_SIDE_AD)
-      #else
-        0.0
-      #endif
-    );
+    #if defined(XY_DIAG_AC) && defined(XY_DIAG_BD) && defined(XY_SIDE_AD)
+      #define XY_SKEW_FACTOR _SKEW_FACTOR(XY_DIAG_AC, XY_DIAG_BD, XY_SIDE_AD)
+    #else
+      #define XY_SKEW_FACTOR 0.0
+    #endif
   #endif
   #ifndef XZ_SKEW_FACTOR
     #if defined(XY_SIDE_AD) && !defined(XZ_SIDE_AD)
       #define XZ_SIDE_AD XY_SIDE_AD
     #endif
-    constexpr float XZ_SKEW_FACTOR = (
-      #if defined(XZ_DIAG_AC) && defined(XZ_DIAG_BD) && defined(XZ_SIDE_AD)
-        _SKEW_FACTOR(XZ_DIAG_AC, XZ_DIAG_BD, XZ_SIDE_AD)
-      #else
-        0.0
-      #endif
-    );
+    #if defined(XZ_DIAG_AC) && defined(XZ_DIAG_BD) && defined(XZ_SIDE_AD)
+      #define XZ_SKEW_FACTOR _SKEW_FACTOR(XZ_DIAG_AC, XZ_DIAG_BD, XZ_SIDE_AD)
+    #else
+      #define XZ_SKEW_FACTOR 0.0
+    #endif
   #endif
   #ifndef YZ_SKEW_FACTOR
-    constexpr float YZ_SKEW_FACTOR = (
-      #if defined(YZ_DIAG_AC) && defined(YZ_DIAG_BD) && defined(YZ_SIDE_AD)
-        _SKEW_FACTOR(YZ_DIAG_AC, YZ_DIAG_BD, YZ_SIDE_AD)
-      #else
-        0.0
-      #endif
-    );
+    #if defined(YZ_DIAG_AC) && defined(YZ_DIAG_BD) && defined(YZ_SIDE_AD)
+      #define YZ_SKEW_FACTOR _SKEW_FACTOR(YZ_DIAG_AC, YZ_DIAG_BD, YZ_SIDE_AD)
+    #else
+      #define YZ_SKEW_FACTOR 0.0
+    #endif
   #endif
 #endif // SKEW_CORRECTION
 
@@ -1259,11 +1260,14 @@
 #endif
 
 /**
- * Heater & Fan Pausing
+ * Heater, Fan, and Probe interactions
  */
 #if FAN_COUNT == 0
   #undef PROBING_FANS_OFF
+  #undef ADAPTIVE_FAN_SLOWING
+  #undef NO_FAN_SLOWING_IN_PID_TUNING
 #endif
+
 #define QUIET_PROBING (HAS_BED_PROBE && (ENABLED(PROBING_HEATERS_OFF) || ENABLED(PROBING_FANS_OFF) || DELAY_BEFORE_PROBING > 0))
 #define HEATER_IDLE_HANDLER (ENABLED(ADVANCED_PAUSE_FEATURE) || ENABLED(PROBING_HEATERS_OFF))
 
@@ -1629,7 +1633,7 @@
 // If platform requires early initialization of watchdog to properly boot
 #define EARLY_WATCHDOG (ENABLED(USE_WATCHDOG) && defined(ARDUINO_ARCH_SAM))
 
-#define USE_EXECUTE_COMMANDS_IMMEDIATE (ENABLED(G29_RETRY_AND_RECOVER) || ENABLED(GCODE_MACROS) || ENABLED(POWER_LOSS_RECOVERY))
+#define USE_EXECUTE_COMMANDS_IMMEDIATE (ENABLED(G29_RETRY_AND_RECOVER) || ENABLED(GCODE_MACROS) || ENABLED(POWER_LOSS_RECOVERY) || HAS_DRIVER(L6470))
 
 #if ENABLED(Z_TRIPLE_STEPPER_DRIVERS)
   #define Z_STEPPER_COUNT 3
@@ -1641,9 +1645,7 @@
 
 // Get LCD character width/height, which may be overridden by pins, configs, etc.
 #ifndef LCD_WIDTH
-  #if ENABLED(LIGHTWEIGHT_UI)
-    #define LCD_WIDTH 16
-  #elif HAS_GRAPHICAL_LCD
+  #if HAS_GRAPHICAL_LCD
     #define LCD_WIDTH 22
   #elif ENABLED(ULTIPANEL)
     #define LCD_WIDTH 20
@@ -1652,9 +1654,7 @@
   #endif
 #endif
 #ifndef LCD_HEIGHT
-  #if ENABLED(LIGHTWEIGHT_UI)
-    #define LCD_HEIGHT 4
-  #elif HAS_GRAPHICAL_LCD
+  #if HAS_GRAPHICAL_LCD
     #define LCD_HEIGHT 5
   #elif ENABLED(ULTIPANEL)
     #define LCD_HEIGHT 4

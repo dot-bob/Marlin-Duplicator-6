@@ -47,7 +47,7 @@
 #endif
 
 #if ENABLED(SWITCHING_EXTRUDER) || ENABLED(SWITCHING_NOZZLE) || ENABLED(SWITCHING_TOOLHEAD)
-  #include "../module/servo.h"
+  #include "servo.h"
 #endif
 
 #if ENABLED(EXT_SOLENOID) && DISABLED(PARKING_EXTRUDER)
@@ -68,6 +68,10 @@
 
 #if HAS_FANMUX
   #include "../feature/fanmux.h"
+#endif
+
+#if ENABLED(PRUSA_MMU2)
+  #include "../feature/prusa_MMU2/mmu2.h"
 #endif
 
 #if HAS_LCD_MENU
@@ -96,11 +100,30 @@
 #endif // DO_SWITCH_EXTRUDER
 
 #if ENABLED(SWITCHING_NOZZLE)
-  void move_nozzle_servo(const uint8_t e) {
-    planner.synchronize();
-    MOVE_SERVO(SWITCHING_NOZZLE_SERVO_NR, servo_angles[SWITCHING_NOZZLE_SERVO_NR][e]);
-    safe_delay(500);
-  }
+
+  #if SWITCHING_NOZZLE_TWO_SERVOS
+
+    inline void _move_nozzle_servo(const uint8_t e, const uint8_t angle_index) {
+      constexpr int8_t  sns_index[2] = { SWITCHING_NOZZLE_SERVO_NR, SWITCHING_NOZZLE_E1_SERVO_NR };
+      constexpr int16_t sns_angles[2] = SWITCHING_NOZZLE_SERVO_ANGLES;
+      planner.synchronize();
+      MOVE_SERVO(sns_index[e], sns_angles[angle_index]);
+      safe_delay(500);
+    }
+
+    void lower_nozzle(const uint8_t e) { _move_nozzle_servo(e, 0); }
+    void raise_nozzle(const uint8_t e) { _move_nozzle_servo(e, 1); }
+
+  #else
+
+    void move_nozzle_servo(const uint8_t angle_index) {
+      planner.synchronize();
+      MOVE_SERVO(SWITCHING_NOZZLE_SERVO_NR, servo_angles[SWITCHING_NOZZLE_SERVO_NR][e]);
+      safe_delay(500);
+    }
+
+  #endif
+
 #endif // SWITCHING_NOZZLE
 
 #if ENABLED(PARKING_EXTRUDER)
@@ -503,10 +526,16 @@ void tool_change(const uint8_t tmp_extruder, const float fr_mm_s/*=0.0*/, bool n
     if (tmp_extruder >= MIXING_VIRTUAL_TOOLS)
       return invalid_extruder_error(tmp_extruder);
 
-    #if MIXING_VIRTUAL_TOOLS >  1
+    #if MIXING_VIRTUAL_TOOLS > 1
       // T0-Tnnn: Switch virtual tool by changing the index to the mix
-      mixer.T(uint_fast8_t(tmp_extruder));
+      mixer.T(tmp_extruder);
     #endif
+
+  #elif ENABLED(PRUSA_MMU2)
+
+    UNUSED(fr_mm_s); UNUSED(no_move);
+
+    mmu2.toolChange(tmp_extruder);
 
   #elif EXTRUDERS < 2
 
@@ -553,8 +582,7 @@ void tool_change(const uint8_t tmp_extruder, const float fr_mm_s/*=0.0*/, bool n
       #endif
       if (should_swap) {
         if (too_cold) {
-          SERIAL_ERROR_START();
-          SERIAL_ERRORLNPGM(MSG_ERR_HOTEND_TOO_COLD);
+          SERIAL_ECHO_MSG(MSG_ERR_HOTEND_TOO_COLD);
           #if ENABLED(SINGLENOZZLE)
             active_extruder = tmp_extruder;
             return;
@@ -572,6 +600,11 @@ void tool_change(const uint8_t tmp_extruder, const float fr_mm_s/*=0.0*/, bool n
     #endif // TOOLCHANGE_FILAMENT_SWAP
 
     if (tmp_extruder != active_extruder) {
+
+      #if SWITCHING_NOZZLE_TWO_SERVOS
+        raise_nozzle(active_extruder);
+      #endif
+
       const float old_feedrate_mm_s = fr_mm_s > 0.0 ? fr_mm_s : feedrate_mm_s;
       feedrate_mm_s = fr_mm_s > 0.0 ? fr_mm_s : XY_PROBE_FEEDRATE_MM_S;
 
@@ -630,8 +663,9 @@ void tool_change(const uint8_t tmp_extruder, const float fr_mm_s/*=0.0*/, bool n
         parking_extruder_tool_change(tmp_extruder, no_move);
       #elif ENABLED(SWITCHING_TOOLHEAD) // Switching Toolhead
         switching_toolhead_tool_change(tmp_extruder, fr_mm_s, no_move);
-      #elif ENABLED(SWITCHING_NOZZLE)
-        // Always raise by a configured distance to avoid workpiece
+      #elif ENABLED(SWITCHING_NOZZLE) && !SWITCHING_NOZZLE_TWO_SERVOS
+        // Raise by a configured distance to avoid workpiece, except with
+        // SWITCHING_NOZZLE_TWO_SERVOS, as both nozzles will lift instead.
         current_position[Z_AXIS] += MAX(-zdiff, 0.0) + toolchange_settings.z_raise;
         #if HAS_SOFTWARE_ENDSTOPS
           NOMORE(current_position[Z_AXIS], soft_endstop_max[Z_AXIS]);
@@ -675,14 +709,14 @@ void tool_change(const uint8_t tmp_extruder, const float fr_mm_s/*=0.0*/, bool n
 
         #if ENABLED(SINGLENOZZLE)
           #if FAN_COUNT > 0
-            singlenozzle_fan_speed[active_extruder] = fan_speed[0];
-            fan_speed[0] = singlenozzle_fan_speed[tmp_extruder];
+            singlenozzle_fan_speed[active_extruder] = thermalManager.fan_speed[0];
+            thermalManager.fan_speed[0] = singlenozzle_fan_speed[tmp_extruder];
           #endif
 
           singlenozzle_temp[active_extruder] = thermalManager.target_temperature[0];
           if (singlenozzle_temp[tmp_extruder] && singlenozzle_temp[tmp_extruder] != singlenozzle_temp[active_extruder]) {
             thermalManager.setTargetHotend(singlenozzle_temp[tmp_extruder], 0);
-            #if ENABLED(ULTRA_LCD)
+            #if ENABLED(ULTRA_LCD) || ENABLED(EXTENSIBLE_UI)
               thermalManager.set_heating_message(0);
             #endif
             (void)thermalManager.wait_for_hotend(0, false);  // Wait for heating or cooling
@@ -714,6 +748,14 @@ void tool_change(const uint8_t tmp_extruder, const float fr_mm_s/*=0.0*/, bool n
           // Move back down. (Including when the new tool is higher.)
           do_blocking_move_to_z(destination[Z_AXIS], planner.settings.max_feedrate_mm_s[Z_AXIS]);
         }
+      #endif
+
+      #if ENABLED(PRUSA_MMU2)
+        mmu2.toolChange(tmp_extruder);
+      #endif
+
+      #if SWITCHING_NOZZLE_TWO_SERVOS
+        lower_nozzle(active_extruder);
       #endif
     } // (tmp_extruder != active_extruder)
 

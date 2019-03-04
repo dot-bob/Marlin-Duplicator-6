@@ -144,7 +144,7 @@ bool enqueue_and_echo_command(const char* cmd) {
   //SERIAL_ECHOPGM("\") \n");
 
   if (*cmd == 0 || *cmd == '\n' || *cmd == '\r') {
-    //SERIAL_ECHOPGM("Null command found...   Did not queue!\n");
+    //SERIAL_ECHOLNPGM("Null command found...   Did not queue!");
     return true;
   }
 
@@ -221,17 +221,17 @@ void ok_to_send() {
     if (port < 0) return;
   #endif
   if (!send_ok[cmd_queue_index_r]) return;
-  SERIAL_PROTOCOLPGM_P(port, MSG_OK);
+  SERIAL_ECHOPGM_P(port, MSG_OK);
   #if ENABLED(ADVANCED_OK)
     char* p = command_queue[cmd_queue_index_r];
     if (*p == 'N') {
-      SERIAL_PROTOCOL_P(port, ' ');
+      SERIAL_ECHO_P(port, ' ');
       SERIAL_ECHO_P(port, *p++);
       while (NUMERIC_SIGNED(*p))
         SERIAL_ECHO_P(port, *p++);
     }
-    SERIAL_PROTOCOLPGM_P(port, " P"); SERIAL_PROTOCOL_P(port, int(BLOCK_BUFFER_SIZE - planner.movesplanned() - 1));
-    SERIAL_PROTOCOLPGM_P(port, " B"); SERIAL_PROTOCOL_P(port, BUFSIZE - commands_in_queue);
+    SERIAL_ECHOPGM_P(port, " P"); SERIAL_ECHO_P(port, int(BLOCK_BUFFER_SIZE - planner.movesplanned() - 1));
+    SERIAL_ECHOPGM_P(port, " B"); SERIAL_ECHO_P(port, BUFSIZE - commands_in_queue);
   #endif
   SERIAL_EOL_P(port);
 }
@@ -246,20 +246,12 @@ void flush_and_request_resend() {
     if (port < 0) return;
   #endif
   SERIAL_FLUSH_P(port);
-  SERIAL_PROTOCOLPGM_P(port, MSG_RESEND);
-  SERIAL_PROTOCOLLN_P(port, gcode_LastN + 1);
+  SERIAL_ECHOPGM_P(port, MSG_RESEND);
+  SERIAL_ECHOLN_P(port, gcode_LastN + 1);
   ok_to_send();
 }
 
-void gcode_line_error(PGM_P err, uint8_t port) {
-  SERIAL_ERROR_START_P(port);
-  serialprintPGM_P(port, err);
-  SERIAL_ERRORLN_P(port, gcode_LastN);
-  flush_and_request_resend();
-  serial_count[port] = 0;
-}
-
-static bool serial_data_available() {
+inline bool serial_data_available() {
   return false
     || MYSERIAL0.available()
     #if NUM_SERIAL > 1
@@ -268,7 +260,7 @@ static bool serial_data_available() {
   ;
 }
 
-static int read_serial(const uint8_t index) {
+inline int read_serial(const uint8_t index) {
   switch (index) {
     case 0: return MYSERIAL0.read();
     #if NUM_SERIAL > 1
@@ -276,6 +268,15 @@ static int read_serial(const uint8_t index) {
     #endif
     default: return -1;
   }
+}
+
+void gcode_line_error(PGM_P err, uint8_t port) {
+  SERIAL_ERROR_START_P(port);
+  serialprintPGM_P(port, err);
+  SERIAL_ECHOLN_P(port, gcode_LastN);
+  while (read_serial(port) != -1);           // clear out the RX buffer
+  flush_and_request_resend();
+  serial_count[port] = 0;
 }
 
 #if ENABLED(FAST_FILE_TRANSFER)
@@ -286,7 +287,7 @@ static int read_serial(const uint8_t index) {
     #define CARD_ECHOLN_P(V) SERIAL_ECHOLN_P(card.transfer_port, V)
   #endif
 
-  static bool serial_data_available(const uint8_t index) {
+  inline bool serial_data_available(const uint8_t index) {
     switch (index) {
       case 0: return MYSERIAL0.available();
       #if NUM_SERIAL > 1
@@ -378,8 +379,8 @@ static int read_serial(const uint8_t index) {
     template<const size_t buffer_size>
     void receive(char (&buffer)[buffer_size]) {
       uint8_t data = 0;
-      millis_t tranfer_timeout = millis() + RX_TIMESLICE;
-      while (PENDING(millis(), tranfer_timeout)) {
+      millis_t transfer_timeout = millis() + RX_TIMESLICE;
+      while (PENDING(millis(), transfer_timeout)) {
         switch (stream_state) {
           case StreamState::STREAM_RESET:
             stream_reset();
@@ -535,6 +536,10 @@ static int read_serial(const uint8_t index) {
 
 #endif // FAST_FILE_TRANSFER
 
+FORCE_INLINE bool is_M29(const char * const cmd) {
+  return cmd[0] == 'M' && cmd[1] == '2' && cmd[2] == '9' && !WITHIN(cmd[3], '0', '9');
+}
+
 /**
  * Get all commands waiting on the serial port and queue them.
  * Exit when the buffer is full or when no more characters are
@@ -630,7 +635,8 @@ inline void get_serial_commands() {
           gcode_LastN = gcode_N;
         }
         #if ENABLED(SDSUPPORT)
-          else if (card.flag.saving && strcmp(command, "M29") != 0) // No line number with M29 in Pronterface
+          // Pronterface "M29" and "M29 " has no line number 
+          else if (card.flag.saving && !is_M29(command))
             return gcode_line_error(PSTR(MSG_ERR_NO_CHECKSUM), i);
         #endif
 
@@ -648,7 +654,7 @@ inline void get_serial_commands() {
               #if ENABLED(BEZIER_CURVE_SUPPORT)
                 case 5:
               #endif
-                SERIAL_ERRORLNPGM(MSG_ERR_STOPPED);
+                SERIAL_ECHOLNPGM(MSG_ERR_STOPPED);
                 LCD_MESSAGEPGM(MSG_STOPPED);
                 break;
             }
@@ -754,7 +760,7 @@ inline void get_serial_commands() {
           if (IS_SD_PRINTING())
             sd_count = 0; // If a sub-file was printing, continue from call point
           else {
-            SERIAL_PROTOCOLLNPGM(MSG_FILE_PRINTED);
+            SERIAL_ECHOLNPGM(MSG_FILE_PRINTED);
             #if ENABLED(PRINTER_EVENT_LEDS)
               printerEventLEDs.onPrintCompleted();
               #if HAS_RESUME_CONTINUE
@@ -769,10 +775,9 @@ inline void get_serial_commands() {
             #endif // PRINTER_EVENT_LEDS
           }
         }
-        else if (n == -1) {
-          SERIAL_ERROR_START();
-          SERIAL_ECHOLNPGM(MSG_SD_ERR_READ);
-        }
+        else if (n == -1)
+          SERIAL_ERROR_MSG(MSG_SD_ERR_READ);
+
         if (sd_char == '#') stop_buffering = true;
 
         sd_comment_mode = false; // for new command
@@ -840,10 +845,10 @@ void advance_command_queue() {
 
     if (card.flag.saving) {
       char* command = command_queue[cmd_queue_index_r];
-      if (strstr_P(command, PSTR("M29"))) {
+      if (is_M29(command)) {
         // M29 closes the file
         card.closefile();
-        SERIAL_PROTOCOLLNPGM(MSG_FILE_SAVED);
+        SERIAL_ECHOLNPGM(MSG_FILE_SAVED);
 
         #if !defined(__AVR__) || !defined(USBCON)
           #if ENABLED(SERIAL_STATS_DROPPED_RX)

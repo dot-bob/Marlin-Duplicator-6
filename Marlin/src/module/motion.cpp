@@ -47,7 +47,7 @@
   #include "../feature/bedlevel/bedlevel.h"
 #endif
 
-#if HAS_AXIS_UNHOMED_ERR && ENABLED(ULTRA_LCD)
+#if HAS_AXIS_UNHOMED_ERR && (ENABLED(ULTRA_LCD) || ENABLED(EXTENSIBLE_UI))
   #include "../lcd/ultralcd.h"
 #endif
 
@@ -117,13 +117,13 @@ float feedrate_mm_s = MMM_TO_MMS(1500.0f);
 int16_t feedrate_percentage = 100;
 
 // Homing feedrate is const progmem - compare to constexpr in the header
-const float homing_feedrate_mm_s[4] PROGMEM = {
+const float homing_feedrate_mm_s[XYZ] PROGMEM = {
   #if ENABLED(DELTA)
     MMM_TO_MMS(HOMING_FEEDRATE_Z), MMM_TO_MMS(HOMING_FEEDRATE_Z),
   #else
     MMM_TO_MMS(HOMING_FEEDRATE_XY), MMM_TO_MMS(HOMING_FEEDRATE_XY),
   #endif
-  MMM_TO_MMS(HOMING_FEEDRATE_Z), 0
+  MMM_TO_MMS(HOMING_FEEDRATE_Z)
 };
 
 // Cartesian conversion result goes here:
@@ -163,14 +163,10 @@ float cartes[XYZ];
  * Output the current position to serial
  */
 void report_current_position() {
-  SERIAL_PROTOCOLPGM("X:");
-  SERIAL_PROTOCOL(LOGICAL_X_POSITION(current_position[X_AXIS]));
-  SERIAL_PROTOCOLPGM(" Y:");
-  SERIAL_PROTOCOL(LOGICAL_Y_POSITION(current_position[Y_AXIS]));
-  SERIAL_PROTOCOLPGM(" Z:");
-  SERIAL_PROTOCOL(LOGICAL_Z_POSITION(current_position[Z_AXIS]));
-  SERIAL_PROTOCOLPGM(" E:");
-  SERIAL_PROTOCOL(current_position[E_AXIS]);
+  SERIAL_ECHOPAIR("X:", LOGICAL_X_POSITION(current_position[X_AXIS]));
+  SERIAL_ECHOPAIR(" Y:", LOGICAL_Y_POSITION(current_position[Y_AXIS]));
+  SERIAL_ECHOPAIR(" Z:", LOGICAL_Z_POSITION(current_position[Z_AXIS]));
+  SERIAL_ECHOPAIR(" E:", current_position[E_AXIS]);
 
   stepper.report_positions();
 
@@ -543,7 +539,7 @@ void clean_up_after_endstop_or_probe_move() { bracket_probe_move(false); }
       soft_endstop_min[axis] = base_min_pos(axis);
       soft_endstop_max[axis] = (axis == Z_AXIS ? delta_height
       #if HAS_BED_PROBE
-        - zprobe_zoffset + Z_PROBE_OFFSET_FROM_EXTRUDER
+        - zprobe_zoffset
       #endif
       : base_max_pos(axis));
 
@@ -967,15 +963,13 @@ void prepare_move_to_destination() {
         #if ENABLED(PREVENT_COLD_EXTRUSION)
           if (thermalManager.tooColdToExtrude(active_extruder)) {
             current_position[E_AXIS] = destination[E_AXIS]; // Behave as if the move really took place, but ignore E part
-            SERIAL_ECHO_START();
-            SERIAL_ECHOLNPGM(MSG_ERR_COLD_EXTRUDE_STOP);
+            SERIAL_ECHO_MSG(MSG_ERR_COLD_EXTRUDE_STOP);
           }
         #endif // PREVENT_COLD_EXTRUSION
         #if ENABLED(PREVENT_LENGTHY_EXTRUDE)
           if (ABS(destination[E_AXIS] - current_position[E_AXIS]) * planner.e_factor[active_extruder] > (EXTRUDE_MAXLENGTH)) {
             current_position[E_AXIS] = destination[E_AXIS]; // Behave as if the move really took place, but ignore E part
-            SERIAL_ECHO_START();
-            SERIAL_ECHOLNPGM(MSG_ERR_LONG_EXTRUDE_STOP);
+            SERIAL_ECHO_MSG(MSG_ERR_LONG_EXTRUDE_STOP);
           }
         #endif // PREVENT_LENGTHY_EXTRUDE
       }
@@ -1025,7 +1019,7 @@ void prepare_move_to_destination() {
       if (zz) SERIAL_ECHOPGM(MSG_Z);
       SERIAL_ECHOLNPGM(" " MSG_FIRST);
 
-      #if ENABLED(ULTRA_LCD)
+      #if ENABLED(ULTRA_LCD) || ENABLED(EXTENSIBLE_UI)
         ui.status_printf_P(0, PSTR(MSG_HOME " %s%s%s " MSG_FIRST), xx ? MSG_X : "", yy ? MSG_Y : "", zz ? MSG_Z : "");
       #endif
       return true;
@@ -1046,47 +1040,108 @@ inline float get_homing_bump_feedrate(const AxisEnum axis) {
   uint8_t hbd = pgm_read_byte(&homing_bump_divisor[axis]);
   if (hbd < 1) {
     hbd = 10;
-    SERIAL_ECHO_START();
-    SERIAL_ECHOLNPGM("Warning: Homing Bump Divisor < 1");
+    SERIAL_ECHO_MSG("Warning: Homing Bump Divisor < 1");
   }
   return homing_feedrate(axis) / hbd;
 }
 
 #if ENABLED(SENSORLESS_HOMING)
-
   /**
    * Set sensorless homing if the axis has it, accounting for Core Kinematics.
    */
-  void sensorless_homing_per_axis(const AxisEnum axis, const bool enable/*=true*/) {
+  sensorless_t start_sensorless_homing_per_axis(const AxisEnum axis) {
+    sensorless_t stealth_states { false, false, false, false, false, false, false };
+
     switch (axis) {
       default: break;
       #if X_SENSORLESS
         case X_AXIS:
-          tmc_stallguard(stepperX, enable);
+          stealth_states.x = tmc_enable_stallguard(stepperX);
+          #if AXIS_HAS_STALLGUARD(X2)
+            stealth_states.x2 = tmc_enable_stallguard(stepperX2);
+          #endif
           #if CORE_IS_XY && Y_SENSORLESS
-            tmc_stallguard(stepperY, enable);
+            stealth_states.y = tmc_enable_stallguard(stepperY);
           #elif CORE_IS_XZ && Z_SENSORLESS
-            tmc_stallguard(stepperZ, enable);
+            stealth_states.z = tmc_enable_stallguard(stepperZ);
           #endif
           break;
       #endif
       #if Y_SENSORLESS
         case Y_AXIS:
-          tmc_stallguard(stepperY, enable);
+          stealth_states.y = tmc_enable_stallguard(stepperY);
+          #if AXIS_HAS_STALLGUARD(Y2)
+            stealth_states.y2 = tmc_enable_stallguard(stepperY2);
+          #endif
           #if CORE_IS_XY && X_SENSORLESS
-            tmc_stallguard(stepperX, enable);
+            stealth_states.x = tmc_enable_stallguard(stepperX);
           #elif CORE_IS_YZ && Z_SENSORLESS
-            tmc_stallguard(stepperZ, enable);
+            stealth_states.z = tmc_enable_stallguard(stepperZ);
           #endif
           break;
       #endif
       #if Z_SENSORLESS
         case Z_AXIS:
-          tmc_stallguard(stepperZ, enable);
+          stealth_states.z = tmc_enable_stallguard(stepperZ);
+          #if AXIS_HAS_STALLGUARD(Z2)
+            stealth_states.z2 = tmc_enable_stallguard(stepperZ2);
+          #endif
+          #if AXIS_HAS_STALLGUARD(Z3)
+            stealth_states.z3 = tmc_enable_stallguard(stepperZ3);
+          #endif
           #if CORE_IS_XZ && X_SENSORLESS
-            tmc_stallguard(stepperX, enable);
+            stealth_states.x = tmc_enable_stallguard(stepperX);
           #elif CORE_IS_YZ && Y_SENSORLESS
-            tmc_stallguard(stepperY, enable);
+            stealth_states.y = tmc_enable_stallguard(stepperY);
+          #endif
+          break;
+      #endif
+    }
+    return stealth_states;
+  }
+
+  void end_sensorless_homing_per_axis(const AxisEnum axis, sensorless_t enable_stealth) {
+    switch (axis) {
+      default: break;
+      #if X_SENSORLESS
+        case X_AXIS:
+          tmc_disable_stallguard(stepperX, enable_stealth.x);
+          #if AXIS_HAS_STALLGUARD(X2)
+            tmc_disable_stallguard(stepperX2, enable_stealth.x2);
+          #endif
+          #if CORE_IS_XY && Y_SENSORLESS
+            tmc_disable_stallguard(stepperY, enable_stealth.y);
+          #elif CORE_IS_XZ && Z_SENSORLESS
+            tmc_disable_stallguard(stepperZ, enable_stealth.z);
+          #endif
+          break;
+      #endif
+      #if Y_SENSORLESS
+        case Y_AXIS:
+          tmc_disable_stallguard(stepperY, enable_stealth.y);
+          #if AXIS_HAS_STALLGUARD(Y2)
+            tmc_disable_stallguard(stepperY2, enable_stealth.y2);
+          #endif
+          #if CORE_IS_XY && X_SENSORLESS
+            tmc_disable_stallguard(stepperX, enable_stealth.x);
+          #elif CORE_IS_YZ && Z_SENSORLESS
+            tmc_disable_stallguard(stepperZ, enable_stealth.z);
+          #endif
+          break;
+      #endif
+      #if Z_SENSORLESS
+        case Z_AXIS:
+          tmc_disable_stallguard(stepperZ, enable_stealth.z);
+          #if AXIS_HAS_STALLGUARD(Z2)
+            tmc_disable_stallguard(stepperZ2, enable_stealth.z2);
+          #endif
+          #if AXIS_HAS_STALLGUARD(Z3)
+            tmc_disable_stallguard(stepperZ3, enable_stealth.z3);
+          #endif
+          #if CORE_IS_XZ && X_SENSORLESS
+            tmc_disable_stallguard(stepperX, enable_stealth.x);
+          #elif CORE_IS_YZ && Y_SENSORLESS
+            tmc_disable_stallguard(stepperY, enable_stealth.y);
           #endif
           break;
       #endif
@@ -1133,6 +1188,10 @@ void do_homing_move(const AxisEnum axis, const float distance, const float fr_mm
     home_dir(axis);
   const bool is_home_dir = (axis_home_dir > 0) == (distance > 0);
 
+  #if ENABLED(SENSORLESS_HOMING)
+    sensorless_t stealth_states;
+  #endif
+
   if (is_home_dir) {
 
     #if HOMING_Z_WITH_PROBE && QUIET_PROBING
@@ -1141,7 +1200,7 @@ void do_homing_move(const AxisEnum axis, const float distance, const float fr_mm
 
     // Disable stealthChop if used. Enable diag1 pin on driver.
     #if ENABLED(SENSORLESS_HOMING)
-      sensorless_homing_per_axis(axis);
+      stealth_states = start_sensorless_homing_per_axis(axis);
     #endif
   }
 
@@ -1182,7 +1241,7 @@ void do_homing_move(const AxisEnum axis, const float distance, const float fr_mm
 
     // Re-enable stealthChop if used. Disable diag1 pin on driver.
     #if ENABLED(SENSORLESS_HOMING)
-      sensorless_homing_per_axis(axis, false);
+      end_sensorless_homing_per_axis(axis, stealth_states);
     #endif
   }
 
@@ -1242,7 +1301,7 @@ void set_axis_is_at_home(const AxisEnum axis) {
   #elif ENABLED(DELTA)
     current_position[axis] = (axis == Z_AXIS ? delta_height
     #if HAS_BED_PROBE
-      - zprobe_zoffset + Z_PROBE_OFFSET_FROM_EXTRUDER
+      - zprobe_zoffset
     #endif
     : base_home_pos(axis));
   #else
@@ -1557,10 +1616,8 @@ void homeaxis(const AxisEnum axis) {
       do_homing_move(axis, delta_endstop_adj[axis] - (MIN_STEPS_PER_SEGMENT + 1) * planner.steps_to_mm[axis] * Z_HOME_DIR);
     }
 
-  #else
+  #else // CARTESIAN / CORE
 
-    // For cartesian/core machines,
-    // set the axis to its home position
     set_axis_is_at_home(axis);
     sync_plan_position();
 

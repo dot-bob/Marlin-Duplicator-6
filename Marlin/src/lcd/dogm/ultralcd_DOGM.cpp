@@ -59,6 +59,10 @@
   #include "../../feature/bedlevel/ubl/ubl.h"
 #endif
 
+/**
+ * Include all needed font files
+ * (See http://marlinfw.org/docs/development/fonts.html)
+ */
 #include "fontdata/fontdata_ISO10646_1.h"
 #if ENABLED(USE_SMALL_INFOFONT)
   #include "fontdata/fontdata_6x9_marlin.h"
@@ -254,11 +258,11 @@ void MarlinUI::clear_lcd() { } // Automatically cleared by Picture Loop
       lcd_put_wchar('E');
       lcd_put_wchar((char)('1' + extruder));
       lcd_put_wchar(' ');
-      lcd_put_u8str(itostr3(thermalManager.degHotend(extruder)));
+      lcd_put_u8str(i16tostr3(thermalManager.degHotend(extruder)));
       lcd_put_wchar('/');
 
       if (get_blink() || !thermalManager.is_heater_idle(extruder))
-        lcd_put_u8str(itostr3(thermalManager.degTargetHotend(extruder)));
+        lcd_put_u8str(i16tostr3(thermalManager.degTargetHotend(extruder)));
     }
 
   #endif // ADVANCED_PAUSE_FEATURE
@@ -362,7 +366,7 @@ void MarlinUI::clear_lcd() { } // Automatically cleared by Picture Loop
     #endif
 
     // Center the label and value lines on the middle line
-    uint8_t baseline = extra_row ? (LCD_PIXEL_HEIGHT) / 2
+    uint8_t baseline = extra_row ? (LCD_PIXEL_HEIGHT) / 2 - 1
                                  : (LCD_PIXEL_HEIGHT + EDIT_FONT_ASCENT) / 2;
 
     // Assume the label is alpha-numeric (with a descender)
@@ -377,7 +381,7 @@ void MarlinUI::clear_lcd() { } // Automatically cleared by Picture Loop
       lcd_put_wchar(':');
       if (extra_row) {
         // Assume the value is numeric (with no descender)
-        baseline += EDIT_FONT_ASCENT;
+        baseline += EDIT_FONT_ASCENT + 2;
         onpage = PAGE_CONTAINS(baseline - (EDIT_FONT_ASCENT - 1), baseline);
       }
       if (onpage) {
