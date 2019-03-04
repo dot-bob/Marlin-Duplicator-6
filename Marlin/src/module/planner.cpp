@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
@@ -2582,6 +2582,10 @@ bool Planner::_populate_block(block_t * const block, bool split_move,
   COPY(position, target);
   #if HAS_POSITION_FLOAT
     COPY(position_float, target_float);
+  #endif
+
+  #if ENABLED(GRADIENT_MIX)
+    mixer.gradient_control(target_float[Z_AXIS]);
   #endif
 
   // Movement was accepted

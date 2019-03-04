@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
@@ -27,10 +27,6 @@
 
 #include "thermistor/thermistors.h"
 #include "../inc/MarlinConfig.h"
-
-#if ENABLED(BABYSTEPPING)
-  extern uint8_t axis_known_position;
-#endif
 
 #if ENABLED(AUTO_POWER_CONTROL)
   #include "../feature/power.h"
@@ -220,12 +216,10 @@ class Temperature {
       static float redundant_temperature;
     #endif
 
-    #if ENABLED(PIDTEMP)
-      #if ENABLED(PID_EXTRUSION_SCALING)
-        static long last_e_position;
-        static long lpq[LPQ_MAX_LEN];
-        static int lpq_ptr;
-      #endif
+    #if ENABLED(PID_EXTRUSION_SCALING)
+      static long last_e_position;
+      static long lpq[LPQ_MAX_LEN];
+      static int lpq_ptr;
     #endif
 
     // Init min and max temp with extreme values to prevent false errors during startup
@@ -381,7 +375,7 @@ class Temperature {
 
     static inline void zero_fan_speeds() {
       #if FAN_COUNT > 0
-        FANS_LOOP(i) fan_speed[i] = 0;
+        FANS_LOOP(i) set_fan_speed(i, 0);
       #endif
     }
 
@@ -585,39 +579,8 @@ class Temperature {
     #endif
 
     #if ENABLED(BABYSTEPPING)
-
-      static void babystep_axis(const AxisEnum axis, const int16_t distance) {
-        if (TEST(axis_known_position, axis)) {
-          #if IS_CORE
-            #if ENABLED(BABYSTEP_XY)
-              switch (axis) {
-                case CORE_AXIS_1: // X on CoreXY and CoreXZ, Y on CoreYZ
-                  babystepsTodo[CORE_AXIS_1] += distance * 2;
-                  babystepsTodo[CORE_AXIS_2] += distance * 2;
-                  break;
-                case CORE_AXIS_2: // Y on CoreXY, Z on CoreXZ and CoreYZ
-                  babystepsTodo[CORE_AXIS_1] += CORESIGN(distance * 2);
-                  babystepsTodo[CORE_AXIS_2] -= CORESIGN(distance * 2);
-                  break;
-                case NORMAL_AXIS: // Z on CoreXY, Y on CoreXZ, X on CoreYZ
-                default:
-                  babystepsTodo[NORMAL_AXIS] += distance;
-                  break;
-              }
-            #elif CORE_IS_XZ || CORE_IS_YZ
-              // Only Z stepping needs to be handled here
-              babystepsTodo[CORE_AXIS_1] += CORESIGN(distance * 2);
-              babystepsTodo[CORE_AXIS_2] -= CORESIGN(distance * 2);
-            #else
-              babystepsTodo[Z_AXIS] += distance;
-            #endif
-          #else
-            babystepsTodo[axis] += distance;
-          #endif
-        }
-      }
-
-    #endif // BABYSTEPPING
+      static void babystep_axis(const AxisEnum axis, const int16_t distance);
+    #endif
 
     #if ENABLED(PROBING_HEATERS_OFF)
       static void pause(const bool p);
@@ -672,16 +635,12 @@ class Temperature {
     #endif // HEATER_IDLE_HANDLER
 
     #if HAS_TEMP_SENSOR
-      static void print_heater_states(const uint8_t target_extruder
-        #if NUM_SERIAL > 1
-          , const int8_t port = -1
-        #endif
-      );
+      static void print_heater_states(const uint8_t target_extruder);
       #if ENABLED(AUTO_REPORT_TEMPERATURES)
         static uint8_t auto_report_temp_interval;
         static millis_t next_temp_report_ms;
         static void auto_report_temperatures(void);
-        FORCE_INLINE void set_auto_report_interval(uint8_t v) {
+        static inline void set_auto_report_interval(uint8_t v) {
           NOMORE(v, 60);
           auto_report_temp_interval = v;
           next_temp_report_ms = millis() + 1000UL * v;

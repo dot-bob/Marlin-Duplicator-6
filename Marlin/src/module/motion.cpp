@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
@@ -88,7 +88,7 @@ bool relative_mode; // = false;
  *   Used by 'buffer_line_to_current_position' to do a move after changing it.
  *   Used by 'sync_plan_position' to update 'planner.position'.
  */
-float current_position[XYZE] = { 0 };
+float current_position[XYZE] = { X_HOME_POS, Y_HOME_POS, Z_HOME_POS };
 
 /**
  * Cartesian Destination
@@ -96,7 +96,7 @@ float current_position[XYZE] = { 0 };
  *   and expected by functions like 'prepare_move_to_destination'.
  *   Set with 'get_destination_from_command' or 'set_destination_from_current'.
  */
-float destination[XYZE] = { 0 };
+float destination[XYZE]; // = { 0 }
 
 // The active extruder (tool). Set with T<extruder> command.
 #if EXTRUDERS > 1
@@ -155,7 +155,7 @@ float cartes[XYZ];
   float workspace_offset[XYZ] = { 0 };
 #endif
 
-#if OLDSCHOOL_ABL
+#if HAS_ABL_NOT_UBL
   float xy_probe_feedrate_mm_s = MMM_TO_MMS(XY_PROBE_SPEED);
 #endif
 
@@ -253,8 +253,8 @@ void set_current_from_steppers_for_axis(const AxisEnum axis) {
  * Move the planner to the current position from wherever it last moved
  * (or from wherever it has been told it is located).
  */
-void line_to_current_position() {
-  planner.buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], feedrate_mm_s, active_extruder);
+void line_to_current_position(const float &fr_mm_s/*=feedrate_mm_s*/) {
+  planner.buffer_line(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], fr_mm_s, active_extruder);
 }
 
 /**
@@ -270,7 +270,7 @@ void buffer_line_to_destination(const float fr_mm_s) {
   /**
    * Calculate delta, start a line, and set current_position to destination
    */
-  void prepare_uninterpolated_move_to_destination(const float fr_mm_s/*=0.0*/) {
+  void prepare_uninterpolated_move_to_destination(const float &fr_mm_s/*=0.0*/) {
     #if ENABLED(DEBUG_LEVELING_FEATURE)
       if (DEBUGGING(LEVELING)) DEBUG_POS("prepare_uninterpolated_move_to_destination", destination);
     #endif
@@ -294,22 +294,21 @@ void buffer_line_to_destination(const float fr_mm_s) {
 #endif // IS_KINEMATIC
 
 /**
- *  Plan a move to (X, Y, Z) and set the current_position
+ * Plan a move to (X, Y, Z) and set the current_position
  */
 void do_blocking_move_to(const float rx, const float ry, const float rz, const float &fr_mm_s/*=0.0*/) {
-  const float old_feedrate_mm_s = feedrate_mm_s;
-
   #if ENABLED(DEBUG_LEVELING_FEATURE)
     if (DEBUGGING(LEVELING)) print_xyz(PSTR(">>> do_blocking_move_to"), NULL, rx, ry, rz);
   #endif
 
-  const float z_feedrate = fr_mm_s ? fr_mm_s : homing_feedrate(Z_AXIS);
+  const float z_feedrate  = fr_mm_s ? fr_mm_s : homing_feedrate(Z_AXIS),
+              xy_feedrate = fr_mm_s ? fr_mm_s : XY_PROBE_FEEDRATE_MM_S;
 
   #if ENABLED(DELTA)
 
     if (!position_is_reachable(rx, ry)) return;
 
-    feedrate_mm_s = fr_mm_s ? fr_mm_s : XY_PROBE_FEEDRATE_MM_S;
+    REMEMBER(fr, feedrate_mm_s, xy_feedrate);
 
     set_destination_from_current();          // sync destination at the start
 
@@ -373,7 +372,7 @@ void do_blocking_move_to(const float rx, const float ry, const float rz, const f
 
     destination[X_AXIS] = rx;
     destination[Y_AXIS] = ry;
-    prepare_uninterpolated_move_to_destination(fr_mm_s ? fr_mm_s : XY_PROBE_FEEDRATE_MM_S);
+    prepare_uninterpolated_move_to_destination(xy_feedrate);
 
     // If Z needs to lower, do it after moving XY
     if (destination[Z_AXIS] > rz) {
@@ -385,26 +384,21 @@ void do_blocking_move_to(const float rx, const float ry, const float rz, const f
 
     // If Z needs to raise, do it before moving XY
     if (current_position[Z_AXIS] < rz) {
-      feedrate_mm_s = z_feedrate;
       current_position[Z_AXIS] = rz;
-      line_to_current_position();
+      line_to_current_position(z_feedrate);
     }
 
-    feedrate_mm_s = fr_mm_s ? fr_mm_s : XY_PROBE_FEEDRATE_MM_S;
     current_position[X_AXIS] = rx;
     current_position[Y_AXIS] = ry;
-    line_to_current_position();
+    line_to_current_position(xy_feedrate);
 
     // If Z needs to lower, do it after moving XY
     if (current_position[Z_AXIS] > rz) {
-      feedrate_mm_s = z_feedrate;
       current_position[Z_AXIS] = rz;
-      line_to_current_position();
+      line_to_current_position(z_feedrate);
     }
 
   #endif
-
-  feedrate_mm_s = old_feedrate_mm_s;
 
   #if ENABLED(DEBUG_LEVELING_FEATURE)
     if (DEBUGGING(LEVELING)) SERIAL_ECHOLNPGM("<<< do_blocking_move_to");
@@ -423,31 +417,20 @@ void do_blocking_move_to_xy(const float &rx, const float &ry, const float &fr_mm
 }
 
 //
-// Prepare to do endstop or probe moves
-// with custom feedrates.
+// Prepare to do endstop or probe moves with custom feedrates.
+//  - Save / restore current feedrate and multiplier
 //
-//  - Save current feedrates
-//  - Reset the rate multiplier
-//
-void bracket_probe_move(const bool before) {
-  static float saved_feedrate_mm_s;
-  static int16_t saved_feedrate_percentage;
-  #if ENABLED(DEBUG_LEVELING_FEATURE)
-    if (DEBUGGING(LEVELING)) DEBUG_POS("bracket_probe_move", current_position);
-  #endif
-  if (before) {
-    saved_feedrate_mm_s = feedrate_mm_s;
-    saved_feedrate_percentage = feedrate_percentage;
-    feedrate_percentage = 100;
-  }
-  else {
-    feedrate_mm_s = saved_feedrate_mm_s;
-    feedrate_percentage = saved_feedrate_percentage;
-  }
+static float saved_feedrate_mm_s;
+static int16_t saved_feedrate_percentage;
+void setup_for_endstop_or_probe_move() {
+  saved_feedrate_mm_s = feedrate_mm_s;
+  saved_feedrate_percentage = feedrate_percentage;
+  feedrate_percentage = 100;
 }
-
-void setup_for_endstop_or_probe_move() { bracket_probe_move(true); }
-void clean_up_after_endstop_or_probe_move() { bracket_probe_move(false); }
+void clean_up_after_endstop_or_probe_move() {
+  feedrate_mm_s = saved_feedrate_mm_s;
+  feedrate_percentage = saved_feedrate_percentage;
+}
 
 #if HAS_SOFTWARE_ENDSTOPS
 
@@ -1032,7 +1015,7 @@ void prepare_move_to_destination() {
 /**
  * Homing bump feedrate (mm/s)
  */
-inline float get_homing_bump_feedrate(const AxisEnum axis) {
+float get_homing_bump_feedrate(const AxisEnum axis) {
   #if HOMING_Z_WITH_PROBE
     if (axis == Z_AXIS) return MMM_TO_MMS(Z_PROBE_SPEED_SLOW);
   #endif
@@ -1326,7 +1309,7 @@ void set_axis_is_at_home(const AxisEnum axis) {
 
       #elif ENABLED(DEBUG_LEVELING_FEATURE)
 
-        if (DEBUGGING(LEVELING)) SERIAL_ECHOLNPGM("*** Z HOMED TO ENDSTOP (Z_MIN_PROBE_ENDSTOP) ***");
+        if (DEBUGGING(LEVELING)) SERIAL_ECHOLNPGM("*** Z HOMED TO ENDSTOP ***");
 
       #endif
     }
@@ -1421,7 +1404,7 @@ void homeaxis(const AxisEnum axis) {
   #endif
 
   // Set flags for X, Y, Z motor locking
-  #if ENABLED(X_DUAL_ENDSTOPS) || ENABLED(Y_DUAL_ENDSTOPS) || Z_MULTI_ENDSTOPS
+  #if HAS_EXTRA_ENDSTOPS
     switch (axis) {
       #if ENABLED(X_DUAL_ENDSTOPS)
         case X_AXIS:
@@ -1499,7 +1482,7 @@ void homeaxis(const AxisEnum axis) {
     #endif
   }
 
-  #if ENABLED(X_DUAL_ENDSTOPS) || ENABLED(Y_DUAL_ENDSTOPS) || Z_MULTI_ENDSTOPS
+  #if HAS_EXTRA_ENDSTOPS
     const bool pos_dir = axis_home_dir > 0;
     #if ENABLED(X_DUAL_ENDSTOPS)
       if (axis == X_AXIS) {

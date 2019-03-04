@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
@@ -32,7 +32,7 @@
 
 #include "../../module/configuration_store.h"
 
-#if ENABLED(FILAMENT_RUNOUT_SENSOR)
+#if HAS_FILAMENT_SENSOR
   #include "../../feature/runout.h"
 #endif
 
@@ -105,7 +105,7 @@ static void lcd_factory_settings() {
   void menu_tool_change() {
     START_MENU();
     MENU_BACK(MSG_MAIN);
-    #if ENABLED(TOOLCHANGE_PARK)
+    #if ENABLED(TOOLCHANGE_FILAMENT_SWAP)
       MENU_ITEM_EDIT(float3, MSG_FILAMENT_SWAP_LENGTH, &toolchange_settings.swap_length, 0, 200);
       MENU_MULTIPLIER_ITEM_EDIT(int4, MSG_SINGLENOZZLE_RETRACT_SPD, &toolchange_settings.retract_speed, 10, 5400);
       MENU_MULTIPLIER_ITEM_EDIT(int4, MSG_SINGLENOZZLE_PRIME_SPD, &toolchange_settings.prime_speed, 10, 5400);
@@ -312,8 +312,8 @@ void menu_configuration() {
     MENU_ITEM(submenu, MSG_RETRACT, menu_config_retract);
   #endif
 
-  #if ENABLED(FILAMENT_RUNOUT_SENSOR)
-    MENU_ITEM_EDIT_CALLBACK(bool, MSG_RUNOUT_SENSOR_ENABLE, &runout.enabled, runout.reset);
+  #if HAS_FILAMENT_SENSOR
+    MENU_ITEM_EDIT_CALLBACK(bool, MSG_RUNOUT_SENSOR, &runout.enabled, runout.reset);
   #endif
 
   #if ENABLED(POWER_LOSS_RECOVERY)

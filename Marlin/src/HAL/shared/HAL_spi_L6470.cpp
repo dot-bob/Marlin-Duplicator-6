@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
@@ -25,30 +25,14 @@
  * Copyright (C) 2009 by William Greiman
  */
 
-// --------------------------------------------------------------------------
-// Includes
-// --------------------------------------------------------------------------
-
 #include "../../inc/MarlinConfig.h"
 
 #if HAS_DRIVER(L6470)
 
 #include "Delay.h"
 
-// --------------------------------------------------------------------------
-// Public Variables
-// --------------------------------------------------------------------------
-
-// --------------------------------------------------------------------------
-// Public functions
-// --------------------------------------------------------------------------
-
 #include "../../core/serial.h"
 #include "../../libs/L6470/L6470_Marlin.h"
-
-// --------------------------------------------------------------------------
-// Software L6470 SPI
-// --------------------------------------------------------------------------
 
 // Make sure GCC optimizes this file.
 // Note that this line triggers a bug in GCC which is fixed by casting.

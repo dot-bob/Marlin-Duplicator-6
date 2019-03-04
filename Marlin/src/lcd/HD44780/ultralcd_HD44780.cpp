@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
@@ -832,11 +832,35 @@ void MarlinUI::draw_status_screen() {
 
         #else // HOTENDS <= 2 && (HOTENDS <= 1 || !HAS_HEATED_BED)
 
-          _draw_axis_value(X_AXIS, ftostr4sign(LOGICAL_X_POSITION(current_position[X_AXIS])), blink);
+          #if DUAL_MIXING_EXTRUDER
 
-          lcd_put_wchar(' ');
+            // Two-component mix / gradient instead of XY
 
-          _draw_axis_value(Y_AXIS, ftostr4sign(LOGICAL_Y_POSITION(current_position[Y_AXIS])), blink);
+            char mixer_messages[12];
+            const char *mix_label;
+            #if ENABLED(GRADIENT_MIX)
+              if (mixer.gradient.enabled) {
+                mixer.update_mix_from_gradient();
+                mix_label = "Gr";
+              }
+              else
+            #endif
+              {
+                mixer.update_mix_from_vtool();
+                mix_label = "Mx";
+              }
+            sprintf_P(mixer_messages, PSTR("%s %d;%d%% "), mix_label, int(mixer.mix[0]), int(mixer.mix[1]));
+            lcd_put_u8str(mixer_messages);
+
+          #else
+
+            _draw_axis_value(X_AXIS, ftostr4sign(LOGICAL_X_POSITION(current_position[X_AXIS])), blink);
+
+            lcd_put_wchar(' ');
+
+            _draw_axis_value(Y_AXIS, ftostr4sign(LOGICAL_Y_POSITION(current_position[Y_AXIS])), blink);
+
+          #endif
 
         #endif // HOTENDS <= 2 && (HOTENDS <= 1 || !HAS_HEATED_BED)
 
@@ -981,7 +1005,7 @@ void MarlinUI::draw_status_screen() {
     void MarlinUI::draw_hotend_status(const uint8_t row, const uint8_t extruder) {
       if (row < LCD_HEIGHT) {
         lcd_moveto(LCD_WIDTH - 9, row);
-        _draw_heater_status(extruder, LCD_STR_THERMOMETER[0], ui.get_blink());
+        _draw_heater_status(extruder, LCD_STR_THERMOMETER[0], get_blink());
       }
     }
 

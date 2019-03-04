@@ -1,5 +1,5 @@
 dist: trusty
-sudo: false
+sudo: require
 
 language: python
 python:
@@ -18,7 +18,15 @@ cache:
 env:
   - TEST_PLATFORM="-e megaatmega2560"
 
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - g++-7
+
 before_install:
+  - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 90
   #
   # Fetch the tag information for the current branch
   - git fetch origin --tags

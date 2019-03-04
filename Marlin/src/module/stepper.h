@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
@@ -230,7 +230,7 @@ class Stepper {
 
   public:
 
-    #if ENABLED(X_DUAL_ENDSTOPS) || ENABLED(Y_DUAL_ENDSTOPS) || Z_MULTI_ENDSTOPS || ENABLED(Z_STEPPER_AUTO_ALIGN)
+    #if HAS_EXTRA_ENDSTOPS || ENABLED(Z_STEPPER_AUTO_ALIGN)
       static bool separate_multi_axis;
     #endif
 
@@ -239,6 +239,7 @@ class Stepper {
         #define PWM_MOTOR_CURRENT DEFAULT_PWM_MOTOR_CURRENT
       #endif
       static uint32_t motor_current_setting[3];
+      static bool initialized;
     #endif
 
   private:
@@ -407,7 +408,7 @@ class Stepper {
       static void microstep_readings();
     #endif
 
-    #if ENABLED(X_DUAL_ENDSTOPS) || ENABLED(Y_DUAL_ENDSTOPS) || Z_MULTI_ENDSTOPS || ENABLED(Z_STEPPER_AUTO_ALIGN)
+    #if HAS_EXTRA_ENDSTOPS || ENABLED(Z_STEPPER_AUTO_ALIGN)
       FORCE_INLINE static void set_separate_multi_axis(const bool state) { separate_multi_axis = state; }
     #endif
     #if ENABLED(X_DUAL_ENDSTOPS)

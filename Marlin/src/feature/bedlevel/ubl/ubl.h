@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2016, 2017 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
@@ -94,21 +94,9 @@ class unified_bed_leveling {
 
   public:
 
-    static void echo_name(
-      #if NUM_SERIAL > 1
-        const int8_t port = -1
-      #endif
-    );
-    static void report_current_mesh(
-      #if NUM_SERIAL > 1
-        const int8_t port = -1
-      #endif
-    );
-    static void report_state(
-      #if NUM_SERIAL > 1
-        const int8_t port = -1
-      #endif
-    );
+    static void echo_name();
+    static void report_current_mesh();
+    static void report_state();
     static void save_ubl_active_state_and_disable();
     static void restore_ubl_active_state_and_leave();
     static void display_map(const int) _O0;

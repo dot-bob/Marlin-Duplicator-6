@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
@@ -339,7 +339,7 @@ bool Sd2Card::readBlock(uint32_t blockNumber, uint8_t* dst) {
 
   #if ENABLED(SD_CHECK_AND_RETRY)
     uint8_t retryCnt = 3;
-    for(;;) {
+    for (;;) {
       if (cardCommand(CMD17, blockNumber))
         error(SD_CARD_ERROR_CMD17);
       else if (readData(dst, 512))

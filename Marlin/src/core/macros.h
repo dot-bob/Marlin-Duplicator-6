@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
@@ -229,3 +229,9 @@
 #define LROUND(x)   lroundf(x)
 #define FMOD(x, y)  fmodf(x, y)
 #define HYPOT(x,y)  SQRT(HYPOT2(x,y))
+
+#ifdef TARGET_LPC1768
+  #define I2C_ADDRESS(A) ((A) << 1)
+#else
+  #define I2C_ADDRESS(A) A
+#endif

@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
@@ -23,6 +23,10 @@
 #pragma once
 
 #include "../../inc/MarlinConfig.h"
+
+#if HAS_FILAMENT_SENSOR
+  #include "../runout.h"
+#endif
 
 struct E_Step;
 
@@ -75,8 +79,16 @@ private:
   static volatile int8_t finda;
   static volatile bool findaRunoutValid;
   static int16_t version, buildnr;
-  static millis_t next_request, next_response;
+  static millis_t last_request, next_P0_request;
   static char rx_buffer[16], tx_buffer[16];
+
+  static inline void set_runout_valid(const bool valid) {
+    findaRunoutValid = valid;
+    #if HAS_FILAMENT_SENSOR
+      if (valid) runout.reset();
+    #endif
+  }
+
 };
 
 extern MMU2 mmu2;

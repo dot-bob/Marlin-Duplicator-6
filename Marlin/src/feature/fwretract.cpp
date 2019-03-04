@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
@@ -142,7 +142,7 @@ void FWRetract::retract(const bool retracting
   set_destination_from_current();
 
   #if ENABLED(RETRACT_SYNC_MIXING)
-    uint8_t old_mixing_tool = mixer.get_current_vtool();
+    const uint8_t old_mixing_tool = mixer.get_current_vtool();
     mixer.T(MIXER_AUTORETRACT_TOOL);
   #endif
 

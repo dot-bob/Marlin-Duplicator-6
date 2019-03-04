@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2016, 2017 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
@@ -55,6 +55,10 @@
 #include "gcode/gcode.h"
 #include "gcode/parser.h"
 #include "gcode/queue.h"
+
+#if ENABLED(HOST_ACTION_COMMANDS)
+  #include "feature/host_actions.h"
+#endif
 
 #if HAS_BUZZER && DISABLED(LCD_USE_I2C_BUZZER)
   #include "libs/buzzer.h"
@@ -132,7 +136,7 @@
   #include "feature/power_loss_recovery.h"
 #endif
 
-#if ENABLED(FILAMENT_RUNOUT_SENSOR)
+#if HAS_FILAMENT_SENSOR
   #include "feature/runout.h"
 #endif
 
@@ -148,7 +152,7 @@
   #include "feature/fanmux.h"
 #endif
 
-#if DO_SWITCH_EXTRUDER || ENABLED(SWITCHING_NOZZLE) || ENABLED(PARKING_EXTRUDER)
+#if DO_SWITCH_EXTRUDER || ENABLED(SWITCHING_NOZZLE) || ENABLED(PARKING_EXTRUDER) || ENABLED(MAGNETIC_PARKING_EXTRUDER)
   #include "module/tool_change.h"
 #endif
 
@@ -191,7 +195,6 @@ millis_t max_inactive_time, // = 0
          stepper_inactive_time = (DEFAULT_STEPPER_DEACTIVE_TIME) * 1000UL;
 
 #if PIN_EXISTS(CHDK)
-  extern bool chdk_active;
   extern millis_t chdk_timeout;
 #endif
 
@@ -217,9 +220,9 @@ void setup_powerhold() {
   #endif
   #if HAS_POWER_SWITCH
     #if ENABLED(PS_DEFAULT_OFF)
-      PSU_OFF();
+      powersupply_on = true;  PSU_OFF();
     #else
-      PSU_ON();
+      powersupply_on = false; PSU_ON();
     #endif
   #endif
 }
@@ -228,10 +231,8 @@ void setup_powerhold() {
  * Stepper Reset (RigidBoard, et.al.)
  */
 #if HAS_STEPPER_RESET
-  void disableStepperDrivers() {
-    OUT_WRITE(STEPPER_RESET_PIN, LOW);  // drive it down to hold in reset motor driver chips
-  }
-  void enableStepperDrivers() { SET_INPUT(STEPPER_RESET_PIN); }  // set to input, which allows it to be pulled high by pullups
+  void disableStepperDrivers() { OUT_WRITE(STEPPER_RESET_PIN, LOW); } // Drive down to keep motor driver chips in reset
+  void enableStepperDrivers()  { SET_INPUT(STEPPER_RESET_PIN); }      // Set to input, allowing pullups to pull the pin high
 #endif
 
 #if ENABLED(EXPERIMENTAL_I2CBUS) && I2C_SLAVE_ADDRESS > 0
@@ -315,37 +316,101 @@ void disable_all_steppers() {
   disable_e_steppers();
 }
 
-#if HAS_ACTION_COMMANDS
+#if HAS_FILAMENT_SENSOR
 
-  void host_action(const char * const pstr, const bool eol=true) {
-    SERIAL_ECHOPGM("//action:");
-    serialprintPGM(pstr);
-    if (eol) SERIAL_EOL();
+  void event_filament_runout() {
+
+    #if ENABLED(ADVANCED_PAUSE_FEATURE)
+      if (did_pause_print) return;  // Action already in progress. Purge triggered repeated runout.
+    #endif
+
+    #if ENABLED(EXTENSIBLE_UI)
+      ExtUI::onFilamentRunout(ExtUI::getActiveTool());
+    #endif
+
+    #if ENABLED(HOST_PROMPT_SUPPORT) || ENABLED(HOST_ACTION_COMMANDS)
+      const char tool = '0'
+        #if NUM_RUNOUT_SENSORS > 1
+          + active_extruder
+        #endif
+      ;
+    #endif
+
+    //action:out_of_filament
+    #if ENABLED(HOST_PROMPT_SUPPORT)
+      host_prompt_reason = PROMPT_FILAMENT_RUNOUT;
+      host_action_prompt_end();
+      host_action_prompt_begin(PSTR("FilamentRunout T"), false);
+      SERIAL_CHAR(tool);
+      SERIAL_EOL();
+      host_action_prompt_show();
+    #endif
+
+    const bool run_runout_script = !runout.host_handling;
+
+    #if ENABLED(HOST_ACTION_COMMANDS)
+      if (run_runout_script
+        && ( strstr(FILAMENT_RUNOUT_SCRIPT, "M600")
+          || strstr(FILAMENT_RUNOUT_SCRIPT, "M125")
+          #if ENABLED(ADVANCED_PAUSE_FEATURE)
+            || strstr(FILAMENT_RUNOUT_SCRIPT, "M25")
+          #endif
+        )
+      ) {
+        host_action_paused(false);
+      }
+      else {
+        // Legacy Repetier command for use until newer version supports standard dialog
+        // To be removed later when pause command also triggers dialog
+        #ifdef ACTION_ON_FILAMENT_RUNOUT
+          host_action(PSTR(ACTION_ON_FILAMENT_RUNOUT " T"), false);
+          SERIAL_CHAR(tool);
+          SERIAL_EOL();
+        #endif
+
+        host_action_pause(false);
+      }
+      SERIAL_ECHOPGM(" " ACTION_REASON_ON_FILAMENT_RUNOUT " ");
+      SERIAL_CHAR(tool);
+      SERIAL_EOL();
+    #endif // HOST_ACTION_COMMANDS
+
+    if (run_runout_script)
+      enqueue_and_echo_commands_P(PSTR(FILAMENT_RUNOUT_SCRIPT));
   }
 
-  #ifdef ACTION_ON_KILL
-    void host_action_kill() { host_action(PSTR(ACTION_ON_KILL)); }
-  #endif
-  #ifdef ACTION_ON_PAUSE
-    void host_action_pause() { host_action(PSTR(ACTION_ON_PAUSE)); }
-  #endif
-  #ifdef ACTION_ON_PAUSED
-    void host_action_paused() { host_action(PSTR(ACTION_ON_PAUSED)); }
-  #endif
-  #ifdef ACTION_ON_RESUME
-    void host_action_resume() { host_action(PSTR(ACTION_ON_RESUME)); }
-  #endif
-  #ifdef ACTION_ON_RESUMED
-    void host_action_resumed() { host_action(PSTR(ACTION_ON_RESUMED)); }
-  #endif
-  #ifdef ACTION_ON_CANCEL
-    void host_action_cancel() { host_action(PSTR(ACTION_ON_CANCEL)); }
-  #endif
-  #ifdef ACTION_ON_FILAMENT_RUNOUT
-    void host_action_filament_runout(const bool eol/*=true*/) { host_action(PSTR(ACTION_ON_FILAMENT_RUNOUT), eol); }
-  #endif
+#endif // HAS_FILAMENT_SENSOR
 
-#endif // HAS_ACTION_COMMANDS
+#if ENABLED(G29_RETRY_AND_RECOVER)
+
+  void event_probe_failure() {
+    #ifdef ACTION_ON_G29_FAILURE
+      host_action(PSTR(ACTION_ON_G29_FAILURE));
+    #endif
+    #ifdef G29_FAILURE_COMMANDS
+      gcode.process_subcommands_now_P(PSTR(G29_FAILURE_COMMANDS));
+    #endif
+    #if ENABLED(G29_HALT_ON_FAILURE)
+      #ifdef ACTION_ON_CANCEL
+        host_action_cancel();
+      #endif
+      kill(PSTR(MSG_ERR_PROBING_FAILED));
+    #endif
+  }
+
+  void event_probe_recover() {
+    #if ENABLED(HOST_PROMPT_SUPPORT)
+      host_prompt_do(PROMPT_INFO, PSTR("G29 Retrying"));
+    #endif
+    #ifdef ACTION_ON_G29_RECOVER
+      host_action(PSTR(ACTION_ON_G29_RECOVER));
+    #endif
+    #ifdef G29_RECOVER_COMMANDS
+      gcode.process_subcommands_now_P(PSTR(G29_RECOVER_COMMANDS));
+    #endif
+  }
+
+#endif
 
 /**
  * Manage several activities:
@@ -358,10 +423,12 @@ void disable_all_steppers() {
  *  - Check for HOME button held down
  *  - Check if cooling fan needs to be switched on
  *  - Check if an idle but hot extruder needs filament extruded (EXTRUDER_RUNOUT_PREVENT)
+ *  - Pulse FET_SAFETY_PIN if it exists
  */
+
 void manage_inactivity(const bool ignore_stepper_queue/*=false*/) {
 
-  #if ENABLED(FILAMENT_RUNOUT_SENSOR)
+  #if HAS_FILAMENT_SENSOR
     runout.run();
   #endif
 
@@ -401,11 +468,14 @@ void manage_inactivity(const bool ignore_stepper_queue/*=false*/) {
         #if ENABLED(DISABLE_INACTIVE_E)
           disable_e_steppers();
         #endif
-        #if HAS_LCD_MENU && ENABLED(AUTO_BED_LEVELING_UBL)
-          if (ubl.lcd_map_control) {
-            ubl.lcd_map_control = false;
-            ui.defer_status_screen(false);
-          }
+        #if HAS_LCD_MENU
+          ui.status_screen();
+          #if ENABLED(AUTO_BED_LEVELING_UBL)
+            if (ubl.lcd_map_control) {
+              ubl.lcd_map_control = false;
+              ui.defer_status_screen(false);
+            }
+          #endif
         #endif
       }
     }
@@ -414,8 +484,8 @@ void manage_inactivity(const bool ignore_stepper_queue/*=false*/) {
   }
 
   #if PIN_EXISTS(CHDK) // Check if pin should be set to LOW (after M240 set it HIGH)
-    if (chdk_active && ELAPSED(ms, chdk_timeout)) {
-      chdk_active = false;
+    if (chdk_timeout && ELAPSED(ms, chdk_timeout)) {
+      chdk_timeout = 0;
       WRITE(CHDK_PIN, LOW);
     }
   #endif
@@ -574,6 +644,16 @@ void manage_inactivity(const bool ignore_stepper_queue/*=false*/) {
     planner.check_axes_activity();
     next_check_axes_ms = ms + 100UL;
   }
+
+  #if PIN_EXISTS(FET_SAFETY)
+    static millis_t FET_next;
+    if (ELAPSED(ms, FET_next)) {
+      FET_next = ms + FET_SAFETY_DELAY;  // 2uS pulse every FET_SAFETY_DELAY mS
+      OUT_WRITE(FET_SAFETY_PIN, !FET_SAFETY_INVERTED);
+      DELAY_US(2);
+      WRITE(FET_SAFETY_PIN, FET_SAFETY_INVERTED);
+    }
+  #endif
 }
 
 /**
@@ -762,7 +842,7 @@ void setup() {
     #endif
   #endif
 
-  #if ENABLED(FILAMENT_RUNOUT_SENSOR)
+  #if HAS_FILAMENT_SENSOR
     runout.setup();
   #endif
 
@@ -841,9 +921,7 @@ void setup() {
 
   #if HAS_M206_COMMAND
     // Initialize current position based on home_offset
-    COPY(current_position, home_offset);
-  #else
-    ZERO(current_position);
+    LOOP_XYZ(a) current_position[a] += home_offset[a];
   #endif
 
   // Vital to init stepper/planner equivalent for current_position
@@ -975,8 +1053,12 @@ void setup() {
     #endif
   #endif
 
+  #if ENABLED(MAGNETIC_PARKING_EXTRUDER)
+    mpe_settings_init();
+  #endif
+
   #if ENABLED(PARKING_EXTRUDER)
-    pe_magnet_init();
+    pe_solenoid_init();
   #endif
 
   #if ENABLED(POWER_LOSS_RECOVERY)

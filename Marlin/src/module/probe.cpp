@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
@@ -364,6 +364,9 @@ FORCE_INLINE void probe_specific_action(const bool deploy) {
 
     KEEPALIVE_STATE(PAUSED_FOR_USER);
     wait_for_user = true;
+    #if ENABLED(HOST_PROMPT_SUPPORT)
+      host_prompt_do(PROMPT_USER_CONTINUE, PSTR("Stow Probe"), PSTR("Continue"));
+    #endif
     while (wait_for_user) idle();
     ui.reset_status();
     KEEPALIVE_STATE(IN_HANDLER);
@@ -447,7 +450,7 @@ bool set_probe_deployed(const bool deploy) {
               oldYpos = current_position[Y_AXIS];
 
   #if ENABLED(PROBE_TRIGGERED_WHEN_STOWED_TEST)
-    #if ENABLED(Z_MIN_PROBE_ENDSTOP)
+    #if USES_Z_MIN_PROBE_ENDSTOP
       #define PROBE_STOWED() (READ(Z_MIN_PROBE_PIN) != Z_MIN_PROBE_ENDSTOP_INVERTING)
     #else
       #define PROBE_STOWED() (READ(Z_MIN_PIN) != Z_MIN_ENDSTOP_INVERTING)
@@ -494,7 +497,7 @@ bool set_probe_deployed(const bool deploy) {
 #endif
 
 #if ENABLED(MEASURE_BACKLASH_WHEN_PROBING)
-  #if ENABLED(Z_MIN_PROBE_ENDSTOP)
+  #if USES_Z_MIN_PROBE_ENDSTOP
     #define TEST_PROBE_PIN (READ(Z_MIN_PROBE_PIN) != Z_MIN_PROBE_ENDSTOP_INVERTING)
   #else
     #define TEST_PROBE_PIN (READ(Z_MIN_PIN) != Z_MIN_ENDSTOP_INVERTING)

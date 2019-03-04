@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
@@ -149,6 +149,7 @@
  * M163 - Set a single proportion for a mixing extruder. (Requires MIXING_EXTRUDER)
  * M164 - Commit the mix and save to a virtual tool (current, or as specified by 'S'). (Requires MIXING_EXTRUDER)
  * M165 - Set the mix for the mixing extruder (and current virtual tool) with parameters ABCDHI. (Requires MIXING_EXTRUDER and DIRECT_MIXING_IN_G1)
+ * M166 - Set the Gradient Mix for the mixing extruder. (Requires GRADIENT_MIX)
  * M190 - Sxxx Wait for bed current temp to reach target temp. ** Waits only when heating! **
  *        Rxxx Wait for bed current temp to reach target temp. ** Waits for heating or cooling. **
  * M200 - Set filament diameter, D<diameter>, setting E axis units to cubic. (Use S0 to revert to linear units.)
@@ -171,7 +172,7 @@
  * M220 - Set Feedrate Percentage: "M220 S<percent>" (i.e., "FR" on the LCD)
  * M221 - Set Flow Percentage: "M221 S<percent>"
  * M226 - Wait until a pin is in a given state: "M226 P<pin> S<state>"
- * M240 - Trigger a camera to take a photograph. (Requires CHDK_PIN or PHOTOGRAPH_PIN)
+ * M240 - Trigger a camera to take a photograph. (Requires PHOTO_GCODE)
  * M250 - Set LCD contrast: "M250 C<contrast>" (0-63). (Requires LCD support)
  * M260 - i2c Send Data (Requires EXPERIMENTAL_I2CBUS)
  * M261 - i2c Request Data (Requires EXPERIMENTAL_I2CBUS)
@@ -243,6 +244,7 @@
  * M914 - Set StallGuard sensitivity. (Requires SENSORLESS_HOMING or SENSORLESS_PROBING)
  * M917 - L6470 tuning: Find minimum current thresholds
  * M918 - L6470 tuning: Increase speed until max or error
+ * M951 - Set Magnetic Parking Extruder parameters. (Requires MAGNETIC_PARKING_EXTRUDER)
  *
  * M360 - SCARA calibration: Move to cal-position ThetaA (0 deg calibration)
  * M361 - SCARA calibration: Move to cal-position ThetaB (90 deg calibration - steps per degree)
@@ -252,6 +254,7 @@
  *
  * ************ Custom codes - This can change to suit future G-code regulations
  * M928 - Start SD logging: "M928 filename.gco". Stop with M29. (Requires SDSUPPORT)
+ * M997 - Perform in-application firmware update
  * M999 - Restart after being stopped by error
  *
  * "T" Codes
@@ -435,6 +438,10 @@ private:
 
   static void G92();
 
+  #if ENABLED(CALIBRATION_GCODE)
+    static void G425();
+  #endif
+
   #if HAS_RESUME_CONTINUE
     static void M0_M1();
   #endif
@@ -527,6 +534,9 @@ private:
     static void M108();
     static void M112();
     static void M410();
+    #if ENABLED(HOST_PROMPT_SUPPORT)
+      static void M876();
+    #endif
   #endif
 
   static void M109();
@@ -588,6 +598,9 @@ private:
     #if ENABLED(DIRECT_MIXING_IN_G1)
       static void M165();
     #endif
+    #if ENABLED(GRADIENT_MIX)
+      static void M166();
+    #endif
   #endif
 
   static void M200();
@@ -627,7 +640,7 @@ private:
   static void M221();
   static void M226();
 
-  #if PIN_EXISTS(CHDK) || HAS_PHOTOGRAPH
+  #if ENABLED(PHOTO_GCODE)
     static void M240();
   #endif
 
@@ -711,7 +724,7 @@ private:
     static void M407();
   #endif
 
-  #if ENABLED(FILAMENT_RUNOUT_SENSOR)
+  #if HAS_FILAMENT_SENSOR
     static void M412();
   #endif
 
@@ -759,7 +772,7 @@ private:
     static void M665();
   #endif
 
-  #if ENABLED(DELTA) || ENABLED(X_DUAL_ENDSTOPS) || ENABLED(Y_DUAL_ENDSTOPS) || Z_MULTI_ENDSTOPS
+  #if ENABLED(DELTA) || HAS_EXTRA_ENDSTOPS
     static void M666();
   #endif
 
@@ -840,6 +853,14 @@ private:
 
   #if ENABLED(SDSUPPORT)
     static void M928();
+  #endif
+
+  #if ENABLED(MAGNETIC_PARKING_EXTRUDER)
+    static void M951();
+  #endif
+
+  #if ENABLED(PLATFORM_M997_SUPPORT)
+    static void M997();
   #endif
 
   static void M999();

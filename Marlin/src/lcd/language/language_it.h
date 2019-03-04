@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
@@ -390,10 +390,59 @@
 #define MSG_FILAMENT_CHANGE_OPTION_PURGE    _UxGT("Spurga di più")
 #define MSG_FILAMENT_CHANGE_OPTION_RESUME   _UxGT("Riprendi stampa")
 #define MSG_FILAMENT_CHANGE_NOZZLE          _UxGT("  Ugello: ")
-#define MSG_RUNOUT_SENSOR_ENABLE            _UxGT("Sens.filo terminato")
+#define MSG_RUNOUT_SENSOR                   _UxGT("Sens.filo terminato")
 #define MSG_ERR_HOMING_FAILED               _UxGT("Home fallito")
 #define MSG_ERR_PROBING_FAILED              _UxGT("Sondaggio fallito")
 #define MSG_M600_TOO_COLD                   _UxGT("M600:Troppo freddo")
+
+#define MSG_MMU2_FILAMENT_CHANGE_HEADER     _UxGT("CAMBIO FILAMENTO")
+#define MSG_MMU2_CHOOSE_FILAMENT_HEADER     _UxGT("SCELTA FILAMENTO")
+#define MSG_MMU2_MENU                       _UxGT("MMU")
+#define MSG_MMU2_WRONG_FIRMWARE             _UxGT("Agg.firmware MMU!")
+#define MSG_MMU2_NOT_RESPONDING             _UxGT("MMU needs attention.")
+#define MSG_MMU2_RESUME                     _UxGT("Riprendi stampa")
+#define MSG_MMU2_RESUMING                   _UxGT("Ripresa...")
+#define MSG_MMU2_LOAD_FILAMENT              _UxGT("Carica filamento")
+#define MSG_MMU2_LOAD_ALL                   _UxGT("Carica tutto")
+#define MSG_MMU2_LOAD_TO_NOZZLE             _UxGT("Load to nozzle")
+#define MSG_MMU2_EJECT_FILAMENT             _UxGT("Espelli filamento")
+#define MSG_MMU2_EJECT_FILAMENT0            _UxGT("Espelli filam.1")
+#define MSG_MMU2_EJECT_FILAMENT1            _UxGT("Espelli filam.2")
+#define MSG_MMU2_EJECT_FILAMENT2            _UxGT("Espelli filam.3")
+#define MSG_MMU2_EJECT_FILAMENT3            _UxGT("Espelli filam.4")
+#define MSG_MMU2_EJECT_FILAMENT4            _UxGT("Espelli filam.5")
+#define MSG_MMU2_UNLOAD_FILAMENT            _UxGT("Scarica filamento")
+#define MSG_MMU2_LOADING_FILAMENT           _UxGT("Caric.fil. %i...")
+#define MSG_MMU2_EJECTING_FILAMENT          _UxGT("Esplus.filam. ...")
+#define MSG_MMU2_UNLOADING_FILAMENT         _UxGT("Scaric.filam. ...")
+#define MSG_MMU2_ALL                        _UxGT("Tutto")
+#define MSG_MMU2_FILAMENT0                  _UxGT("Filamento 1")
+#define MSG_MMU2_FILAMENT1                  _UxGT("Filamento 2")
+#define MSG_MMU2_FILAMENT2                  _UxGT("Filamento 3")
+#define MSG_MMU2_FILAMENT3                  _UxGT("Filamento 4")
+#define MSG_MMU2_FILAMENT4                  _UxGT("Filamento 5")
+#define MSG_MMU2_RESET                      _UxGT("Azzera MMU")
+#define MSG_MMU2_RESETTING                  _UxGT("Azzeramento MMU...")
+#define MSG_MMU2_EJECT_RECOVER              _UxGT("Rimuovi, click")
+
+#define MSG_MIX                             _UxGT("Miscela")
+#define MSG_MIX_COMPONENT                   _UxGT("Componente")
+#define MSG_MIXER                           _UxGT("Miscelatore")
+#define MSG_GRADIENT                        _UxGT("Gradiente")
+#define MSG_FULL_GRADIENT                   _UxGT("Gradiente pieno")
+#define MSG_TOGGLE_MIX                      _UxGT("Alterna miscela")
+#define MSG_CYCLE_MIX                       _UxGT("Ciclo miscela")
+#define MSG_GRADIENT_MIX                    _UxGT("Miscela gradiente")
+#define MSG_REVERSE_GRADIENT                _UxGT("Inverti gradiente")
+#define MSG_ACTIVE_VTOOL                    _UxGT("V-tool attivo")
+#define MSG_START_VTOOL                     _UxGT("V-tool iniziale")
+#define MSG_END_VTOOL                       _UxGT("V-tool finale")
+#define MSG_GRADIENT_ALIAS                  _UxGT("V-tool alias")
+#define MSG_RESET_VTOOLS                    _UxGT("Ripristina V-tools")
+#define MSG_COMMIT_VTOOL                    _UxGT("Commit mix V-tool")
+#define MSG_VTOOLS_RESET                    _UxGT("V-tools ripristin.")
+#define MSG_START_Z                         _UxGT("Z inizio")
+#define MSG_END_Z                           _UxGT("Z fine")
 
 //
 // Le schermate di Cambio Filamento possono visualizzare fino a 3 linee su un display a 4 righe
@@ -446,3 +495,5 @@
 #define MSG_TMC_HOMING_THRS                 _UxGT("Azzer. sensorless")
 #define MSG_TMC_STEPPING_MODE               _UxGT("Modo stepping")
 #define MSG_TMC_STEALTH_ENABLED             _UxGT("StealthChop abil.")
+
+#define MSG_SERVICE_RESET                   _UxGT("Resetta")

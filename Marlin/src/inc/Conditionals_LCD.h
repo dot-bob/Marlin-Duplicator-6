@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
@@ -158,10 +158,11 @@
   #define ENCODER_STEPS_PER_MENU_ITEM 2
 #endif
 
-// Generic support for SSD1306 / SSD1309 / SH1106 OLED based LCDs.
-#if ENABLED(U8GLIB_SSD1306) || ENABLED(U8GLIB_SSD1309) || ENABLED(U8GLIB_SH1106)
-  #define ULTRA_LCD  //general LCD support, also 16x2
-  #define DOGLCD  // Support for I2C LCD 128x64 (Controller SSD1306 / SSD1309 / SH1106 graphic Display Family)
+// 128x64 I2C OLED LCDs - SSD1306/SSD1309/SH1106
+#define HAS_SSD1306_OLED_I2C (ENABLED(U8GLIB_SSD1306) || ENABLED(U8GLIB_SSD1309) || ENABLED(U8GLIB_SH1106))
+#if HAS_SSD1306_OLED_I2C
+  #define ULTRA_LCD
+  #define DOGLCD
 #endif
 
 #if ENABLED(PANEL_ONE) || ENABLED(U8GLIB_SH1106)
@@ -369,6 +370,16 @@
  *
  */
 
+#if EXTRUDERS == 0
+  #undef DISTINCT_E_FACTORS
+  #undef SINGLENOZZLE
+  #undef SWITCHING_EXTRUDER
+  #undef SWITCHING_NOZZLE
+  #undef MIXING_EXTRUDER
+  #undef MK2_MULTIPLEXER
+  #undef PRUSA_MMU2
+#endif
+
 #if ENABLED(SWITCHING_EXTRUDER)   // One stepper for every two EXTRUDERS
   #if EXTRUDERS > 4
     #define E_STEPPERS    3
@@ -383,6 +394,7 @@
 #elif ENABLED(MIXING_EXTRUDER)
   #define E_STEPPERS      MIXING_STEPPERS
   #define E_MANUAL        1
+  #define DUAL_MIXING_EXTRUDER (MIXING_STEPPERS == 2)
 #elif ENABLED(SWITCHING_TOOLHEAD)
   #define E_STEPPERS      EXTRUDERS
   #define E_MANUAL        EXTRUDERS
@@ -503,6 +515,7 @@
 #define PROBE_SELECTED (HAS_BED_PROBE || ENABLED(PROBE_MANUALLY) || ENABLED(MESH_BED_LEVELING))
 
 #if HAS_BED_PROBE
+  #define USES_Z_MIN_PROBE_ENDSTOP DISABLED(Z_MIN_PROBE_USES_Z_MIN_ENDSTOP_PIN)
   #ifndef Z_PROBE_LOW_POINT
     #define Z_PROBE_LOW_POINT -5
   #endif
@@ -512,7 +525,6 @@
 #else
   // Clear probe pin settings when no probe is selected
   #undef Z_MIN_PROBE_USES_Z_MIN_ENDSTOP_PIN
-  #undef Z_MIN_PROBE_ENDSTOP
 #endif
 
 #define HOMING_Z_WITH_PROBE (HAS_BED_PROBE && Z_HOME_DIR < 0 && ENABLED(Z_MIN_PROBE_USES_Z_MIN_ENDSTOP_PIN))
@@ -526,15 +538,16 @@
 #define HAS_COLOR_LEDS (ENABLED(BLINKM) || ENABLED(RGB_LED) || ENABLED(RGBW_LED) || ENABLED(PCA9632) || ENABLED(PCA9533) || ENABLED(NEOPIXEL_LED))
 #define HAS_LEDS_OFF_FLAG (ENABLED(PRINTER_EVENT_LEDS) && ENABLED(SDSUPPORT) && HAS_RESUME_CONTINUE)
 #define HAS_PRINT_PROGRESS (ENABLED(SDSUPPORT) || ENABLED(LCD_SET_PROGRESS_MANUALLY))
+#define HAS_SERVICE_INTERVALS (SERVICE_INTERVAL_1 > 0 || SERVICE_INTERVAL_2 > 0 || SERVICE_INTERVAL_3 > 0)
+#define HAS_FILAMENT_SENSOR ENABLED(FILAMENT_RUNOUT_SENSOR)
 
 #define Z_MULTI_STEPPER_DRIVERS (ENABLED(Z_DUAL_STEPPER_DRIVERS) || ENABLED(Z_TRIPLE_STEPPER_DRIVERS))
 #define Z_MULTI_ENDSTOPS (ENABLED(Z_DUAL_ENDSTOPS) || ENABLED(Z_TRIPLE_ENDSTOPS))
+#define HAS_EXTRA_ENDSTOPS (ENABLED(X_DUAL_ENDSTOPS) || ENABLED(Y_DUAL_ENDSTOPS) || Z_MULTI_ENDSTOPS)
 
 #define IS_SCARA     (ENABLED(MORGAN_SCARA) || ENABLED(MAKERARM_SCARA))
 #define IS_KINEMATIC (ENABLED(DELTA) || IS_SCARA)
 #define IS_CARTESIAN !IS_KINEMATIC
-
-#define HAS_ACTION_COMMANDS (defined(ACTION_ON_KILL) || defined(ACTION_ON_PAUSE) || defined(ACTION_ON_PAUSED) || defined(ACTION_ON_RESUME) || defined(ACTION_ON_RESUMED) || defined(ACTION_ON_CANCEL) || defined(G29_ACTION_ON_RECOVER) || defined(G29_ACTION_ON_FAILURE) || defined(ACTION_ON_FILAMENT_RUNOUT))
 
 #ifndef INVERT_X_DIR
   #define INVERT_X_DIR false
@@ -547,4 +560,30 @@
 #endif
 #ifndef INVERT_E_DIR
   #define INVERT_E_DIR false
+#endif
+
+#if ENABLED(HOST_ACTION_COMMANDS)
+  #ifndef ACTION_ON_PAUSE
+    #define ACTION_ON_PAUSE   "pause"
+  #endif
+  #ifndef ACTION_ON_RESUME
+    #define ACTION_ON_RESUME  "resume"
+  #endif
+  #ifndef ACTION_ON_PAUSED
+    #define ACTION_ON_PAUSED  "paused"
+  #endif
+  #ifndef ACTION_ON_RESUMED
+    #define ACTION_ON_RESUMED "resumed"
+  #endif
+  #ifndef ACTION_ON_CANCEL
+    #define ACTION_ON_CANCEL  "cancel"
+  #endif
+  #if ENABLED(G29_RETRY_AND_RECOVER)
+    #ifndef ACTION_ON_G29_RECOVER
+      #define ACTION_ON_G29_RECOVER "probe_rewipe"
+    #endif
+    #ifndef ACTION_ON_G29_FAILURE
+      #define ACTION_ON_G29_FAILURE "probe_failed"
+    #endif
+  #endif
 #endif

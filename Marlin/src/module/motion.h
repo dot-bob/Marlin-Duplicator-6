@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2016 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
@@ -58,7 +58,7 @@ extern float cartes[XYZ];
   extern float delta[ABC];
 #endif
 
-#if OLDSCHOOL_ABL
+#if HAS_ABL_NOT_UBL
   extern float xy_probe_feedrate_mm_s;
   #define XY_PROBE_FEEDRATE_MM_S xy_probe_feedrate_mm_s
 #elif defined(XY_PROBE_SPEED)
@@ -73,6 +73,7 @@ extern float cartes[XYZ];
  */
 extern const float homing_feedrate_mm_s[XYZ];
 FORCE_INLINE float homing_feedrate(const AxisEnum a) { return pgm_read_float(&homing_feedrate_mm_s[a]); }
+float get_homing_bump_feedrate(const AxisEnum axis);
 
 extern float feedrate_mm_s;
 
@@ -148,7 +149,7 @@ void sync_plan_position_e();
  * Move the planner to the current position from wherever it last moved
  * (or from wherever it has been told it is located).
  */
-void line_to_current_position();
+void line_to_current_position(const float &fr_mm_s=feedrate_mm_s);
 
 /**
  * Move the planner to the position stored in the destination array, which is
@@ -157,7 +158,7 @@ void line_to_current_position();
 void buffer_line_to_destination(const float fr_mm_s);
 
 #if IS_KINEMATIC
-  void prepare_uninterpolated_move_to_destination(const float fr_mm_s=0);
+  void prepare_uninterpolated_move_to_destination(const float &fr_mm_s=0);
 #endif
 
 void prepare_move_to_destination();
@@ -170,18 +171,14 @@ void do_blocking_move_to_x(const float &rx, const float &fr_mm_s=0);
 void do_blocking_move_to_z(const float &rz, const float &fr_mm_s=0);
 void do_blocking_move_to_xy(const float &rx, const float &ry, const float &fr_mm_s=0);
 
-FORCE_INLINE void do_blocking_move_to(const float (&raw)[XYZ], const float &fr_mm_s) {
+FORCE_INLINE void do_blocking_move_to(const float (&raw)[XYZ], const float &fr_mm_s=0) {
   do_blocking_move_to(raw[X_AXIS], raw[Y_AXIS], raw[Z_AXIS], fr_mm_s);
 }
 
-FORCE_INLINE void do_blocking_move_to(const float (&raw)[XYZE], const float &fr_mm_s) {
+FORCE_INLINE void do_blocking_move_to(const float (&raw)[XYZE], const float &fr_mm_s=0) {
   do_blocking_move_to(raw[X_AXIS], raw[Y_AXIS], raw[Z_AXIS], fr_mm_s);
 }
 
-void setup_for_endstop_or_probe_move();
-void clean_up_after_endstop_or_probe_move();
-
-void bracket_probe_move(const bool before);
 void setup_for_endstop_or_probe_move();
 void clean_up_after_endstop_or_probe_move();
 
