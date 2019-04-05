@@ -37,7 +37,7 @@
   #include "../../module/configuration_store.h"
 #endif
 
-#if WATCH_HOTENDS || WATCH_THE_BED || ENABLED(BABYSTEP_ZPROBE_OFFSET)
+#if WATCH_HOTENDS || WATCH_BED || ENABLED(BABYSTEP_ZPROBE_OFFSET)
   #include "../../module/temperature.h"
 #endif
 
@@ -45,7 +45,7 @@
   #include "../../module/probe.h"
 #endif
 
-#if ENABLED(ENABLE_LEVELING_FADE_HEIGHT) || ENABLED(AUTO_BED_LEVELING_UBL)
+#if EITHER(ENABLE_LEVELING_FADE_HEIGHT, AUTO_BED_LEVELING_UBL)
   #include "../../feature/bedlevel/bedlevel.h"
 #endif
 
@@ -54,10 +54,12 @@
 ////////////////////////////////////////////
 
 // Menu Navigation
-int8_t encoderTopLine;
+int8_t encoderTopLine, encoderLine, screen_items;
+
 typedef struct {
   screenFunc_t menu_function;
   uint32_t encoder_position;
+  uint8_t top_line, items;
 } menuPosition;
 menuPosition screen_history[6];
 uint8_t screen_history_depth = 0;
@@ -80,20 +82,14 @@ bool no_reentry = false;
 void MarlinUI::return_to_status() { goto_screen(status_screen); }
 
 void MarlinUI::save_previous_screen() {
-  if (screen_history_depth < COUNT(screen_history)) {
-    screen_history[screen_history_depth].menu_function = currentScreen;
-    screen_history[screen_history_depth].encoder_position = encoderPosition;
-    ++screen_history_depth;
-  }
+  if (screen_history_depth < COUNT(screen_history))
+    screen_history[screen_history_depth++] = { currentScreen, encoderPosition, encoderTopLine, screen_items };
 }
 
 void MarlinUI::goto_previous_screen() {
   if (screen_history_depth > 0) {
-    --screen_history_depth;
-    goto_screen(
-      screen_history[screen_history_depth].menu_function,
-      screen_history[screen_history_depth].encoder_position
-    );
+    menuPosition &sh = screen_history[--screen_history_depth];
+    goto_screen(sh.menu_function, sh.encoder_position, sh.top_line, sh.items);
   }
   else
     return_to_status();
@@ -197,7 +193,7 @@ bool printer_busy() {
 /**
  * General function to go directly to a screen
  */
-void MarlinUI::goto_screen(screenFunc_t screen, const uint32_t encoder/*=0*/) {
+void MarlinUI::goto_screen(screenFunc_t screen, const uint32_t encoder/*=0*/, const uint8_t top/*=0*/, const uint8_t items/*=0*/) {
   if (currentScreen != screen) {
 
     #if ENABLED(ENABLE_LEVELING_FADE_HEIGHT)
@@ -205,7 +201,7 @@ void MarlinUI::goto_screen(screenFunc_t screen, const uint32_t encoder/*=0*/) {
       lcd_z_fade_height = planner.z_fade_height;
     #endif
 
-    #if ENABLED(DOUBLECLICK_FOR_Z_BABYSTEPPING) && ENABLED(BABYSTEPPING)
+    #if BOTH(DOUBLECLICK_FOR_Z_BABYSTEPPING, BABYSTEPPING)
       static millis_t doubleclick_expire_ms = 0;
       // Going to menu_main from status screen? Remember first click time.
       // Going back to status screen within a very short time? Go to Z babystepping.
@@ -246,6 +242,8 @@ void MarlinUI::goto_screen(screenFunc_t screen, const uint32_t encoder/*=0*/) {
 
     currentScreen = screen;
     encoderPosition = encoder;
+    encoderTopLine = top;
+    screen_items = items;
     if (screen == status_screen) {
       defer_status_screen(false);
       #if ENABLED(AUTO_BED_LEVELING_UBL)
@@ -314,7 +312,6 @@ void MarlinUI::synchronize(PGM_P const msg/*=NULL*/) {
  *   _thisItemNr is the index of each MENU_ITEM or STATIC_ITEM
  *   screen_items is the total number of items in the menu (after one call)
  */
-int8_t encoderLine, screen_items;
 void scroll_screen(const uint8_t limit, const bool is_menu) {
   ui.encoder_direction_menus();
   ENCODER_RATE_MULTIPLY(false);
@@ -357,7 +354,7 @@ void MarlinUI::completion_feedback(const bool good/*=true*/) {
 
   void lcd_babystep_zoffset() {
     if (ui.use_click()) return ui.goto_previous_screen_no_defer();
-    ui.defer_status_screen(true);
+    ui.defer_status_screen();
     #if ENABLED(BABYSTEP_HOTEND_Z_OFFSET)
       const bool do_probe = (active_extruder == 0);
     #else
@@ -405,40 +402,7 @@ void MarlinUI::completion_feedback(const bool good/*=true*/) {
 
 #endif // BABYSTEP_ZPROBE_OFFSET
 
-/**
- * Watch temperature callbacks
- */
-#if HAS_TEMP_HOTEND
-  #if WATCH_HOTENDS
-    #define _WATCH_FUNC(N) thermalManager.start_watching_heater(N)
-  #else
-    #define _WATCH_FUNC(N) NOOP
-  #endif
-  void watch_temp_callback_E0() { _WATCH_FUNC(0); }
-  #if HOTENDS > 1
-    void watch_temp_callback_E1() { _WATCH_FUNC(1); }
-    #if HOTENDS > 2
-      void watch_temp_callback_E2() { _WATCH_FUNC(2); }
-      #if HOTENDS > 3
-        void watch_temp_callback_E3() { _WATCH_FUNC(3); }
-        #if HOTENDS > 4
-          void watch_temp_callback_E4() { _WATCH_FUNC(4); }
-          #if HOTENDS > 5
-            void watch_temp_callback_E5() { _WATCH_FUNC(5); }
-          #endif // HOTENDS > 5
-        #endif // HOTENDS > 4
-      #endif // HOTENDS > 3
-    #endif // HOTENDS > 2
-  #endif // HOTENDS > 1
-#endif // HAS_TEMP_HOTEND
-
-void watch_temp_callback_bed() {
-  #if WATCH_THE_BED
-    thermalManager.start_watching_bed();
-  #endif
-}
-
-#if ENABLED(AUTO_BED_LEVELING_UBL) || ENABLED(PID_AUTOTUNE_MENU) || ENABLED(ADVANCED_PAUSE_FEATURE)
+#if ANY(AUTO_BED_LEVELING_UBL, PID_AUTOTUNE_MENU, ADVANCED_PAUSE_FEATURE)
 
   void lcd_enqueue_command(const char * const cmd) {
     no_reentry = true;

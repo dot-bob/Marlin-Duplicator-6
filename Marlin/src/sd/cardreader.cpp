@@ -438,9 +438,7 @@ void CardReader::openFile(char * const path, const bool read, const bool subcall
       filespos[file_subcall_ctr] = sdpos;
 
       SERIAL_ECHO_START();
-      SERIAL_ECHOPAIR("SUBROUTINE CALL target:\"", path);
-      SERIAL_ECHOPAIR("\" parent:\"", proc_filenames[file_subcall_ctr]);
-      SERIAL_ECHOLNPAIR("\" pos", sdpos);
+      SERIAL_ECHOLNPAIR("SUBROUTINE CALL target:\"", path, "\" parent:\"", proc_filenames[file_subcall_ctr], "\" pos", sdpos);
       file_subcall_ctr++;
     }
     else
@@ -470,8 +468,7 @@ void CardReader::openFile(char * const path, const bool read, const bool subcall
     if (file.open(curDir, fname, O_READ)) {
       filesize = file.fileSize();
       sdpos = 0;
-      SERIAL_ECHOPAIR(MSG_SD_FILE_OPENED, fname);
-      SERIAL_ECHOLNPAIR(MSG_SD_SIZE, filesize);
+      SERIAL_ECHOLNPAIR(MSG_SD_FILE_OPENED, fname, MSG_SD_SIZE, filesize);
       SERIAL_ECHOLNPGM(MSG_SD_FILE_SELECTED);
 
       getfilename(0, fname);
@@ -480,18 +477,12 @@ void CardReader::openFile(char * const path, const bool read, const bool subcall
       //  SERIAL_ECHOPAIR(MSG_SD_FILE_LONG_NAME, longFilename);
       //}
     }
-    else {
-      SERIAL_ECHOPAIR(MSG_SD_OPEN_FILE_FAIL, fname);
-      SERIAL_CHAR('.');
-      SERIAL_EOL();
-    }
+    else
+      SERIAL_ECHOLNPAIR(MSG_SD_OPEN_FILE_FAIL, fname, ".");
   }
   else { //write
-    if (!file.open(curDir, fname, O_CREAT | O_APPEND | O_WRITE | O_TRUNC)) {
-      SERIAL_ECHOPAIR(MSG_SD_OPEN_FILE_FAIL, fname);
-      SERIAL_CHAR('.');
-      SERIAL_EOL();
-    }
+    if (!file.open(curDir, fname, O_CREAT | O_APPEND | O_WRITE | O_TRUNC))
+      SERIAL_ECHOLNPAIR(MSG_SD_OPEN_FILE_FAIL, fname, ".");
     else {
       flag.saving = true;
       getfilename(0, fname);
@@ -520,10 +511,8 @@ void CardReader::removeFile(const char * const name) {
       presort();
     #endif
   }
-  else {
-    SERIAL_ECHOPAIR("Deletion failed, File: ", fname);
-    SERIAL_CHAR('.');
-  }
+  else
+    SERIAL_ECHOLNPAIR("Deletion failed, File: ", fname, ".");
 }
 
 void CardReader::report_status() {
@@ -669,9 +658,7 @@ const char* CardReader::diveToFile(SdFile*& curDir, const char * const path, con
     if (echo) SERIAL_ECHOLN(dosSubdirname);
 
     if (!myDir.open(curDir, dosSubdirname, O_READ)) {
-      SERIAL_ECHOPAIR(MSG_SD_OPEN_FILE_FAIL, dosSubdirname);
-      SERIAL_CHAR('.');
-      SERIAL_EOL();
+      SERIAL_ECHOLNPAIR(MSG_SD_OPEN_FILE_FAIL, dosSubdirname, ".");
       return NULL;
     }
     curDir = &myDir;
@@ -826,7 +813,11 @@ void CardReader::setroot() {
 
         // Init sort order.
         for (uint16_t i = 0; i < fileCnt; i++) {
-          sort_order[i] = i;
+          sort_order[i] = (
+            #if ENABLED(SDCARD_RATHERRECENTFIRST)
+              fileCnt - 1 -
+            #endif
+          i);
           // If using RAM then read all filenames now.
           #if ENABLED(SDSORT_USES_RAM)
             getfilename(i);
@@ -913,12 +904,10 @@ void CardReader::setroot() {
       }
       else {
         sort_order[0] = 0;
-        #if ENABLED(SDSORT_USES_RAM) && ENABLED(SDSORT_CACHE_NAMES)
+        #if BOTH(SDSORT_USES_RAM, SDSORT_CACHE_NAMES)
           #if ENABLED(SDSORT_DYNAMIC_RAM)
             sortnames = new char*[1];
-            #if ENABLED(SDSORT_CACHE_NAMES)
-              sortshort = new char*[1];
-            #endif
+            sortshort = new char*[1];
             isDir = new uint8_t[1];
           #endif
           getfilename(0);
@@ -988,7 +977,7 @@ void CardReader::printingHasFinished() {
       presort();
     #endif
 
-    #if (ENABLED(ULTRA_LCD) || ENABLED(EXTENSIBLE_UI)) && ENABLED(LCD_SET_PROGRESS_MANUALLY)
+    #if EITHER(ULTRA_LCD, EXTENSIBLE_UI) && ENABLED(LCD_SET_PROGRESS_MANUALLY)
       ui.progress_bar_percent = 0;
     #endif
 
@@ -1019,7 +1008,7 @@ void CardReader::printingHasFinished() {
 
 #if ENABLED(POWER_LOSS_RECOVERY)
 
-  constexpr char job_recovery_file_name[4] = "BIN";
+  constexpr char job_recovery_file_name[4] = "PLR";
 
   bool CardReader::jobRecoverFileExists() {
     const bool exists = recovery.file.open(&root, job_recovery_file_name, O_READ);
@@ -1030,11 +1019,8 @@ void CardReader::printingHasFinished() {
   void CardReader::openJobRecoveryFile(const bool read) {
     if (!isDetected()) return;
     if (recovery.file.isOpen()) return;
-    if (!recovery.file.open(&root, job_recovery_file_name, read ? O_READ : O_CREAT | O_WRITE | O_TRUNC | O_SYNC)) {
-      SERIAL_ECHOPAIR(MSG_SD_OPEN_FILE_FAIL, job_recovery_file_name);
-      SERIAL_CHAR('.');
-      SERIAL_EOL();
-    }
+    if (!recovery.file.open(&root, job_recovery_file_name, read ? O_READ : O_CREAT | O_WRITE | O_TRUNC | O_SYNC))
+      SERIAL_ECHOLNPAIR(MSG_SD_OPEN_FILE_FAIL, job_recovery_file_name, ".");
     else if (!read)
       SERIAL_ECHOLNPAIR(MSG_SD_WRITE_TO_FILE, job_recovery_file_name);
   }
@@ -1044,7 +1030,6 @@ void CardReader::printingHasFinished() {
   // be zeroed and written instead of deleted.
   void CardReader::removeJobRecoveryFile() {
     if (jobRecoverFileExists()) {
-      //closefile();
       removeFile(job_recovery_file_name);
       #if ENABLED(DEBUG_POWER_LOSS_RECOVERY)
         SERIAL_ECHOPGM("Power-loss file delete");

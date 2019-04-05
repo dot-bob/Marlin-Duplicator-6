@@ -247,8 +247,8 @@
 #ifndef MSG_IDEX_MODE_DUPLICATE
   #define MSG_IDEX_MODE_DUPLICATE             _UxGT("Duplication")
 #endif
-#ifndef MSG_IDEX_MODE_SCALED_COPY
-  #define MSG_IDEX_MODE_SCALED_COPY           _UxGT("Scaled copy")
+#ifndef MSG_IDEX_MODE_MIRRORED_COPY
+  #define MSG_IDEX_MODE_MIRRORED_COPY         _UxGT("Mirrored copy")
 #endif
 #ifndef MSG_IDEX_MODE_FULL_CTRL
   #define MSG_IDEX_MODE_FULL_CTRL             _UxGT("Full control")
@@ -536,6 +536,9 @@
 #endif
 #ifndef MSG_BED
   #define MSG_BED                             _UxGT("Bed")
+#endif
+#ifndef MSG_CHAMBER
+  #define MSG_CHAMBER                         _UxGT("Enclosure")
 #endif
 #ifndef MSG_FAN_SPEED
   #define MSG_FAN_SPEED                       _UxGT("Fan speed")
@@ -864,6 +867,15 @@
 #ifndef MSG_BLTOUCH_DEPLOY
   #define MSG_BLTOUCH_DEPLOY                  _UxGT("Deploy BLTouch")
 #endif
+#ifndef MSG_BLTOUCH_SW_MODE
+  #define MSG_BLTOUCH_SW_MODE                 _UxGT("SW Deploy BLTouch")
+#endif
+#ifndef MSG_BLTOUCH_5V_MODE
+  #define MSG_BLTOUCH_5V_MODE                 _UxGT("BLTouch 5V Mode")
+#endif
+#ifndef MSG_BLTOUCH_OD_MODE
+  #define MSG_BLTOUCH_OD_MODE                 _UxGT("BLTouch OD Mode")
+#endif
 #ifndef MSG_BLTOUCH_STOW
   #define MSG_BLTOUCH_STOW                    _UxGT("Stow BLTouch")
 #endif
@@ -920,6 +932,12 @@
 #endif
 #ifndef MSG_ERR_MINTEMP_BED
   #define MSG_ERR_MINTEMP_BED                 _UxGT("Err: MINTEMP BED")
+#endif
+#ifndef MSG_ERR_MAXTEMP_CHAMBER
+  #define MSG_ERR_MAXTEMP_CHAMBER             _UxGT("Err: MAXTEMP CHAMBER")
+#endif
+#ifndef MSG_ERR_MINTEMP_CHAMBER
+  #define MSG_ERR_MINTEMP_CHAMBER             _UxGT("Err: MINTEMP CHAMBER")
 #endif
 #ifndef MSG_ERR_Z_HOMING
   #define MSG_ERR_Z_HOMING                    MSG_HOME _UxGT(" ") MSG_X MSG_Y _UxGT(" ") MSG_FIRST
@@ -1259,6 +1277,18 @@
 #ifndef MSG_END_Z
   #define MSG_END_Z                           _UxGT("  End Z")
 #endif
+#ifndef MSG_BRICKOUT
+  #define MSG_BRICKOUT                        _UxGT("Brickout")
+#endif
+#ifndef MSG_INVADERS
+  #define MSG_INVADERS                        _UxGT("Invaders")
+#endif
+#ifndef MSG_SNAKE
+  #define MSG_SNAKE                           _UxGT("Sn4k3")
+#endif
+#ifndef MSG_MAZE
+  #define MSG_MAZE                            _UxGT("Maze")
+#endif
 
 //
 // Filament Change screens show up to 3 lines on a 4-line display
@@ -1268,6 +1298,9 @@
   #ifndef MSG_ADVANCED_PAUSE_WAITING_1
     #define MSG_ADVANCED_PAUSE_WAITING_1      _UxGT("Press button")
     #define MSG_ADVANCED_PAUSE_WAITING_2      _UxGT("to resume print")
+  #endif
+  #ifndef MSG_PAUSE_PRINT_INIT_1
+    #define MSG_PAUSE_PRINT_INIT_1            _UxGT("Parking...")
   #endif
   #ifndef MSG_FILAMENT_CHANGE_INIT_1
     #define MSG_FILAMENT_CHANGE_INIT_1        _UxGT("Wait for")
@@ -1364,4 +1397,14 @@
 #endif
 #ifndef MSG_SERVICE_IN
   #define MSG_SERVICE_IN                      _UxGT(" in:")
+#endif
+
+#ifndef MSG_BACKLASH
+  #define MSG_BACKLASH                        _UxGT("Backlash")
+#endif
+#ifndef MSG_BACKLASH_CORRECTION
+  #define MSG_BACKLASH_CORRECTION             _UxGT("Correction")
+#endif
+#ifndef MSG_BACKLASH_SMOOTHING
+  #define MSG_BACKLASH_SMOOTHING              _UxGT("Smoothing")
 #endif
