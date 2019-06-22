@@ -237,10 +237,6 @@ void GcodeSuite::G28(const bool always_home_all) {
     workspace_plane = PLANE_XY;
   #endif
 
-  #if ENABLED(BLTOUCH)
-    bltouch.init();
-  #endif
-
   // Always home with tool 0 active
   #if HOTENDS > 1
     #if DISABLED(DELTA) || ENABLED(DELTA_HOME_TO_SAFE_ZONE)
@@ -264,13 +260,9 @@ void GcodeSuite::G28(const bool always_home_all) {
 
   #else // NOT DELTA
 
-    const bool homeX = always_home_all || parser.seen('X'),
-               homeY = always_home_all || parser.seen('Y'),
-               homeZ = always_home_all || parser.seen('Z'),
-               home_all = (!homeX && !homeY && !homeZ) || (homeX && homeY && homeZ),
-               doX = home_all || homeX,
-               doY = home_all || homeY,
-               doZ = home_all || homeZ;
+    const bool homeX = parser.seen('X'), homeY = parser.seen('Y'), homeZ = parser.seen('Z'),
+               home_all = always_home_all || (homeX == homeY && homeX == homeZ),
+               doX = home_all || homeX, doY = home_all || homeY, doZ = home_all || homeZ;
 
     set_destination_from_current();
 
@@ -353,6 +345,9 @@ void GcodeSuite::G28(const bool always_home_all) {
     // Home Z last if homing towards the bed
     #if Z_HOME_DIR < 0
       if (doZ) {
+        #if ENABLED(BLTOUCH)
+          bltouch.init();
+        #endif
         #if ENABLED(Z_SAFE_HOMING)
           home_z_safely();
         #else
@@ -406,14 +401,13 @@ void GcodeSuite::G28(const bool always_home_all) {
 
   #ifdef HOMING_BACKOFF_MM
     endstops.enable(false);
-    constexpr float backoff[XYZ] = HOMING_BACKOFF_MM;
+    constexpr float endstop_backoff[XYZ] = HOMING_BACKOFF_MM;
     const float backoff_x = doX ? ABS(endstop_backoff[X_AXIS]) * (X_HOME_DIR) : 0,
                 backoff_y = doY ? ABS(endstop_backoff[Y_AXIS]) * (Y_HOME_DIR) : 0,
                 backoff_z = doZ ? ABS(endstop_backoff[Z_AXIS]) * (Z_HOME_DIR) : 0;
     if (backoff_z) do_blocking_move_to_z(current_position[Z_AXIS] - backoff_z);
     if (backoff_x || backoff_y) do_blocking_move_to_xy(current_position[X_AXIS] - backoff_x, current_position[Y_AXIS] - backoff_y);
   #endif
-
   endstops.not_homing();
 
   #if BOTH(DELTA, DELTA_HOME_TO_SAFE_ZONE)
@@ -429,7 +423,7 @@ void GcodeSuite::G28(const bool always_home_all) {
 
   // Restore the active tool after homing
   #if HOTENDS > 1 && (DISABLED(DELTA) || ENABLED(DELTA_HOME_TO_SAFE_ZONE))
-    #if ENABLED(PARKING_EXTRUDER) || ENABLED(DUAL_X_CARRIAGE)
+    #if EITHER(PARKING_EXTRUDER, DUAL_X_CARRIAGE)
       #define NO_FETCH false // fetch the previous toolhead
     #else
       #define NO_FETCH true

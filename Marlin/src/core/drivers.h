@@ -37,6 +37,8 @@
 #define _TMC2160_STANDALONE 2161
 #define _TMC2208            2208
 #define _TMC2208_STANDALONE 0x00A
+#define _TMC2209            2209
+#define _TMC2209_STANDALONE 0x00D
 #define _TMC26X             0x10B
 #define _TMC26X_STANDALONE  0x00B
 #define _TMC2660            2660
@@ -65,20 +67,52 @@
 
 #define AXIS_DRIVER_TYPE(A,T) AXIS_DRIVER_TYPE_##A(T)
 
-#define HAS_DRIVER(T)  (AXIS_DRIVER_TYPE_X(T)  || AXIS_DRIVER_TYPE_X2(T) || \
-                        AXIS_DRIVER_TYPE_Y(T)  || AXIS_DRIVER_TYPE_Y2(T) || \
-                        AXIS_DRIVER_TYPE_Z(T)  || AXIS_DRIVER_TYPE_Z2(T) || AXIS_DRIVER_TYPE_Z3(T) || \
-                        AXIS_DRIVER_TYPE_E0(T) || AXIS_DRIVER_TYPE_E1(T) || \
-                        AXIS_DRIVER_TYPE_E2(T) || AXIS_DRIVER_TYPE_E3(T) || \
-                        AXIS_DRIVER_TYPE_E4(T) || AXIS_DRIVER_TYPE_E5(T) )
+#define HAS_DRIVER(T) (    AXIS_DRIVER_TYPE_X(T)  || AXIS_DRIVER_TYPE_X2(T) \
+                        || AXIS_DRIVER_TYPE_Y(T)  || AXIS_DRIVER_TYPE_Y2(T) \
+                        || AXIS_DRIVER_TYPE_Z(T)  || AXIS_DRIVER_TYPE_Z2(T) || AXIS_DRIVER_TYPE_Z3(T) \
+                        || AXIS_DRIVER_TYPE_E0(T) || AXIS_DRIVER_TYPE_E1(T) \
+                        || AXIS_DRIVER_TYPE_E2(T) || AXIS_DRIVER_TYPE_E3(T) \
+                        || AXIS_DRIVER_TYPE_E4(T) || AXIS_DRIVER_TYPE_E5(T) )
 
 // Test for supported TMC drivers that require advanced configuration
 // Does not match standalone configurations
-#define HAS_TRINAMIC ( HAS_DRIVER(TMC2130) || HAS_DRIVER(TMC2160) || HAS_DRIVER(TMC2208) || HAS_DRIVER(TMC2660) || HAS_DRIVER(TMC5130) || HAS_DRIVER(TMC5160) )
+#define HAS_TRINAMIC (    HAS_DRIVER(TMC2130) \
+                       || HAS_DRIVER(TMC2160) \
+                       || HAS_DRIVER(TMC2208) \
+                       || HAS_DRIVER(TMC2209) \
+                       || HAS_DRIVER(TMC2660) \
+                       || HAS_DRIVER(TMC5130) \
+                       || HAS_DRIVER(TMC5160) )
 
-#define AXIS_IS_TMC(A) ( AXIS_DRIVER_TYPE_##A(TMC2130) || \
-                         AXIS_DRIVER_TYPE_##A(TMC2160) || \
-                         AXIS_DRIVER_TYPE_##A(TMC2208) || \
-                         AXIS_DRIVER_TYPE_##A(TMC2660) || \
-                         AXIS_DRIVER_TYPE_##A(TMC5130) || \
-                         AXIS_DRIVER_TYPE_##A(TMC5160))
+#define AXIS_IS_TMC(A)   (    AXIS_DRIVER_TYPE(A,TMC2130) \
+                           || AXIS_DRIVER_TYPE(A,TMC2160) \
+                           || AXIS_DRIVER_TYPE(A,TMC2208) \
+                           || AXIS_DRIVER_TYPE(A,TMC2209) \
+                           || AXIS_DRIVER_TYPE(A,TMC2660) \
+                           || AXIS_DRIVER_TYPE(A,TMC5130) \
+                           || AXIS_DRIVER_TYPE(A,TMC5160) )
+
+// Test for a driver that uses SPI - this allows checking whether a _CS_ pin
+// is considered sensitive
+#define AXIS_HAS_SPI(A)  (    AXIS_DRIVER_TYPE(A,TMC2130) \
+                           || AXIS_DRIVER_TYPE(A,TMC2160) \
+                           || AXIS_DRIVER_TYPE(A,TMC2660) \
+                           || AXIS_DRIVER_TYPE(A,TMC5130) \
+                           || AXIS_DRIVER_TYPE(A,TMC5160) )
+
+#define AXIS_HAS_UART(A) (    AXIS_DRIVER_TYPE(A,TMC2208) \
+                           || AXIS_DRIVER_TYPE(A,TMC2209) )
+
+#define AXIS_HAS_STALLGUARD(A)   (    AXIS_DRIVER_TYPE(A,TMC2130) \
+                                   || AXIS_DRIVER_TYPE(A,TMC2160) \
+                                   || AXIS_DRIVER_TYPE(A,TMC2209) \
+                                   || AXIS_DRIVER_TYPE(A,TMC2660) \
+                                   || AXIS_DRIVER_TYPE(A,TMC5130) \
+                                   || AXIS_DRIVER_TYPE(A,TMC5160) )
+
+#define AXIS_HAS_STEALTHCHOP(A)  (    AXIS_DRIVER_TYPE(A,TMC2130) \
+                                   || AXIS_DRIVER_TYPE(A,TMC2160) \
+                                   || AXIS_DRIVER_TYPE(A,TMC2208) \
+                                   || AXIS_DRIVER_TYPE(A,TMC2209) \
+                                   || AXIS_DRIVER_TYPE(A,TMC5130) \
+                                   || AXIS_DRIVER_TYPE(A,TMC5160) )

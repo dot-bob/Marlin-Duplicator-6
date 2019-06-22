@@ -36,7 +36,27 @@
 
 Adafruit_NeoPixel pixels(NEOPIXEL_PIXELS, NEOPIXEL_PIN, NEOPIXEL_TYPE + NEO_KHZ800);
 
+#ifdef NEOPIXEL_BKGD_LED_INDEX
+  void set_neopixel_color_background() {
+    uint8_t background_color[4] = NEOPIXEL_BKGD_COLOR;
+    pixels.setPixelColor(NEOPIXEL_BKGD_LED_INDEX, pixels.Color(background_color[0], background_color[1], background_color[2], background_color[3]));
+  }
+#endif
+
 void set_neopixel_color(const uint32_t color) {
+  for (uint16_t i = 0; i < pixels.numPixels(); ++i) {
+    #ifdef NEOPIXEL_BKGD_LED_INDEX
+      if (i == NEOPIXEL_BKGD_LED_INDEX && color != 0x000000) {
+        set_neopixel_color_background();
+        continue;
+      }
+    #endif
+    pixels.setPixelColor(i, color);
+  }
+  pixels.show();
+}
+
+void set_neopixel_color_startup(const uint32_t color) {
   for (uint16_t i = 0; i < pixels.numPixels(); ++i)
     pixels.setPixelColor(i, color);
   pixels.show();
@@ -50,12 +70,16 @@ void setup_neopixel() {
 
   #if ENABLED(NEOPIXEL_STARTUP_TEST)
     safe_delay(1000);
-    set_neopixel_color(pixels.Color(255, 0, 0, 0));  // red
+    set_neopixel_color_startup(pixels.Color(255, 0, 0, 0));  // red
     safe_delay(1000);
-    set_neopixel_color(pixels.Color(0, 255, 0, 0));  // green
+    set_neopixel_color_startup(pixels.Color(0, 255, 0, 0));  // green
     safe_delay(1000);
-    set_neopixel_color(pixels.Color(0, 0, 255, 0));  // blue
+    set_neopixel_color_startup(pixels.Color(0, 0, 255, 0));  // blue
     safe_delay(1000);
+  #endif
+
+  #ifdef NEOPIXEL_BKGD_LED_INDEX
+    set_neopixel_color_background();
   #endif
 
   #if ENABLED(LED_USER_PRESET_STARTUP)

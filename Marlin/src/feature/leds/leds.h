@@ -120,19 +120,28 @@ typedef struct LEDColor {
   #else
     #define MakeLEDColor(R,G,B,W,I) LEDColor(R, G, B, W)
   #endif
-  #define LEDColorWhite() LEDColor(0, 0, 0, 255)
 #else
-  #define MakeLEDColor(R,G,B,W,I) LEDColor(R, G, B)
-  #define LEDColorWhite() LEDColor(255, 255, 255)
+  #define MakeLEDColor(R,G,B,W,I)   LEDColor(R, G, B)
 #endif
-#define LEDColorOff()     LEDColor(  0,   0,   0)
-#define LEDColorRed()     LEDColor(255,   0,   0)
-#define LEDColorOrange()  LEDColor(255,  80,   0)
-#define LEDColorYellow()  LEDColor(255, 255,   0)
-#define LEDColorGreen()   LEDColor(  0, 255,   0)
-#define LEDColorBlue()    LEDColor(  0,   0, 255)
-#define LEDColorIndigo()  LEDColor(  0, 255, 255)
-#define LEDColorViolet()  LEDColor(255,   0, 255)
+
+#define LEDColorOff()             LEDColor(  0,   0,   0)
+#define LEDColorRed()             LEDColor(255,   0,   0)
+#if ENABLED(LED_COLORS_REDUCE_GREEN)
+  #define LEDColorOrange()        LEDColor(255,  25,   0)
+  #define LEDColorYellow()        LEDColor(255,  75,   0)
+#else
+  #define LEDColorOrange()        LEDColor(255,  80,   0)
+  #define LEDColorYellow()        LEDColor(255, 255,   0)
+#endif
+#define LEDColorGreen()           LEDColor(  0, 255,   0)
+#define LEDColorBlue()            LEDColor(  0,   0, 255)
+#define LEDColorIndigo()          LEDColor(  0, 255, 255)
+#define LEDColorViolet()          LEDColor(255,   0, 255)
+#if HAS_WHITE_LED
+  #define LEDColorWhite()         LEDColor(  0,   0,   0, 255)
+#else
+  #define LEDColorWhite()         LEDColor(255, 255, 255)
+#endif
 
 class LEDLights {
 public:
@@ -191,6 +200,17 @@ public:
   #if ENABLED(LED_CONTROL_MENU)
     static void toggle();  // swap "off" with color
     static inline void update() { set_color(color); }
+  #endif
+
+  #ifdef LED_BACKLIGHT_TIMEOUT
+    private:
+      static millis_t led_off_time;
+    public:
+      static inline void reset_timeout(const millis_t &ms) {
+        led_off_time = ms + LED_BACKLIGHT_TIMEOUT;
+        if (!lights_on) set_default();
+      }
+      static void update_timeout(const bool power_on);
   #endif
 };
 

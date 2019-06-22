@@ -1,4 +1,4 @@
-dist: trusty
+dist: xenial
 sudo: require
 
 language: python
@@ -38,7 +38,7 @@ before_install:
 
 install:
   #- pip install -U platformio
-  - pip install -U https://github.com/platformio/platformio-core/archive/develop.zip
+  - pip install -U https://github.com/platformio/platformio-core/archive/master.zip
 
 before_script:
   # Update PlatformIO packages

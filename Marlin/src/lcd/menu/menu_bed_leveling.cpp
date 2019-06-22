@@ -105,9 +105,9 @@
         ui.wait_for_bl_move = true;
         ui.goto_screen(_lcd_level_bed_done);
         #if ENABLED(MESH_BED_LEVELING)
-          enqueue_and_echo_commands_P(PSTR("G29 S2"));
+          queue.inject_P(PSTR("G29 S2"));
         #elif ENABLED(PROBE_MANUALLY)
-          enqueue_and_echo_commands_P(PSTR("G29 V1"));
+          queue.inject_P(PSTR("G29 V1"));
         #endif
       }
       else
@@ -120,7 +120,7 @@
     // Encoder knob or keypad buttons adjust the Z position
     //
     if (ui.encoderPosition) {
-      const float z = current_position[Z_AXIS] + float((int32_t)ui.encoderPosition) * (MESH_EDIT_Z_STEP);
+      const float z = current_position[Z_AXIS] + float(int16_t(ui.encoderPosition)) * (MESH_EDIT_Z_STEP);
       line_to_z(constrain(z, -(LCD_PROBE_Z_RANGE) * 0.5f, (LCD_PROBE_Z_RANGE) * 0.5f));
       ui.refresh(LCDVIEW_CALL_REDRAW_NEXT);
       ui.encoderPosition = 0;
@@ -157,9 +157,9 @@
     // G29 Records Z, moves, and signals when it pauses
     ui.wait_for_bl_move = true;
     #if ENABLED(MESH_BED_LEVELING)
-      enqueue_and_echo_commands_P(manual_probe_index ? PSTR("G29 S2") : PSTR("G29 S1"));
+      queue.inject_P(manual_probe_index ? PSTR("G29 S2") : PSTR("G29 S1"));
     #elif ENABLED(PROBE_MANUALLY)
-      enqueue_and_echo_commands_P(PSTR("G29 V1"));
+      queue.inject_P(PSTR("G29 V1"));
     #endif
   }
 
@@ -194,7 +194,7 @@
     ui.defer_status_screen();
     set_all_unhomed();
     ui.goto_screen(_lcd_level_bed_homing);
-    enqueue_and_echo_commands_P(PSTR("G28"));
+    queue.inject_P(PSTR("G28"));
   }
 
 #endif // PROBE_MANUALLY || MESH_BED_LEVELING

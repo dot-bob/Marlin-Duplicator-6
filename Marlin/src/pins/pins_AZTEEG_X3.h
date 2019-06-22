@@ -37,15 +37,13 @@
 #endif
 #define BOARD_NAME "Azteeg X3"
 
-#include "pins_RAMPS_13.h"
-
 //
 // Servos
 //
-#undef SERVO0_PIN
-#undef SERVO1_PIN
 #define SERVO0_PIN         44   // SERVO1 port
 #define SERVO1_PIN         55   // SERVO2 port
+
+#include "pins_RAMPS_13.h"
 
 //
 // LCD / Controller
@@ -83,7 +81,7 @@
 // M3/M4/M5 - Spindle/Laser Control
 //
 #undef SPINDLE_LASER_PWM_PIN    // Definitions in pins_RAMPS.h are no good with the AzteegX3 board
-#undef SPINDLE_LASER_ENABLE_PIN
+#undef SPINDLE_LASER_ENA_PIN
 #undef SPINDLE_DIR_PIN
 
 #if ENABLED(SPINDLE_LASER_ENABLE)
@@ -94,6 +92,6 @@
     #define SERVO0_PIN     11
   #endif
   #define SPINDLE_LASER_PWM_PIN     7   // MUST BE HARDWARE PWM
-  #define SPINDLE_LASER_ENABLE_PIN 20   // Pin should have a pullup!
+  #define SPINDLE_LASER_ENA_PIN    20   // Pin should have a pullup!
   #define SPINDLE_DIR_PIN          21
 #endif

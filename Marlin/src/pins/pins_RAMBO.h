@@ -149,8 +149,14 @@
 // M3/M4/M5 - Spindle/Laser Control
 //
 #define SPINDLE_LASER_PWM_PIN    45   // MUST BE HARDWARE PWM
-#define SPINDLE_LASER_ENABLE_PIN 31   // Pin should have a pullup!
+#define SPINDLE_LASER_ENA_PIN    31   // Pin should have a pullup!
 #define SPINDLE_DIR_PIN          32
+
+//
+// M7/M8/M9 - Coolant Control
+//
+#define COOLANT_MIST_PIN   22
+#define COOLANT_FLOOD_PIN  44
 
 //
 // Průša i3 MK2 Multiplexer Support
