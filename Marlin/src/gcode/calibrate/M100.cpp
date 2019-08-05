@@ -1,9 +1,9 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
- * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
+ * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -75,7 +75,7 @@
 
   char *end_bss = &__bss_end__,
        *stacklimit = &__StackLimit,
-       *heaplimit = &__HeapLimit ;
+       *heaplimit = &__HeapLimit;
 
   #define MEMORY_END_CORRECTION 0x200
 
@@ -93,6 +93,20 @@
        *heaplimit = 0;
 
   #define MEMORY_END_CORRECTION 0x10000  // need to stay well below 0x20080000 or M100 F crashes
+
+#elif defined(__SAMD51__)
+
+  extern unsigned int __bss_end__, __StackLimit, __HeapLimit;
+  extern "C" void * _sbrk(int incr);
+
+  void *end_bss = &__bss_end__,
+       *stacklimit = &__StackLimit,
+       *heaplimit = &__HeapLimit;
+
+  #define MEMORY_END_CORRECTION 0x400
+
+  char *free_memory_start = (char *)_sbrk(0) + 0x200,     //  Leave some heap space
+       *free_memory_end = (char *)stacklimit - MEMORY_END_CORRECTION;
 
 #else
   #error "M100 - unsupported CPU"
@@ -153,12 +167,7 @@ inline int32_t count_test_bytes(const char * const start_free_memory) {
       SERIAL_CHAR('|');                   // Point out non test bytes
       for (uint8_t i = 0; i < 16; i++) {
         char ccc = (char)start_free_memory[i]; // cast to char before automatically casting to char on assignment, in case the compiler is broken
-        if (&start_free_memory[i] >= (char*)queue.buffer && &start_free_memory[i] < (char*)queue.buffer + sizeof(queue.buffer)) { // Print out ASCII in the command buffer area
-          if (!WITHIN(ccc, ' ', 0x7E)) ccc = ' ';
-        }
-        else { // If not in the command buffer area, flag bytes that don't match the test byte
-          ccc = (ccc == TEST_BYTE) ? ' ' : '?';
-        }
+        ccc = (ccc == TEST_BYTE) ? ' ' : '?';
         SERIAL_CHAR(ccc);
       }
       SERIAL_EOL();

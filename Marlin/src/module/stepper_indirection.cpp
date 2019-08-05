@@ -1,9 +1,9 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
- * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
+ * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,8 +26,6 @@
  * Stepper motor driver indirection to allow some stepper functions to
  * be done via SPI/I2c instead of direct pin manipulation.
  *
- * Part of Marlin
- *
  * Copyright (c) 2015 Dominik Wenger
  */
 
@@ -47,8 +45,8 @@
 #if HAS_DRIVER(TMC26X)
   #include <SPI.h>
 
-  #ifdef STM32F7
-    #include "../HAL/HAL_STM32F7/TMC2660.h"
+  #if defined(STM32GENERIC) && defined(STM32F7)
+    #include "../HAL/HAL_STM32_F4_F7/STM32F7/TMC2660.h"
   #else
     #include <TMC26XStepper.h>
   #endif
@@ -269,14 +267,12 @@
   void tmc_init(TMCMarlin<TMC2160Stepper, AXIS_LETTER, DRIVER_ID, AXIS_ID> &st, const uint16_t mA, const uint16_t microsteps, const uint32_t thrs, const bool stealth) {
     st.begin();
 
-    static constexpr int8_t timings[] = CHOPPER_TIMING; // Default 4, -2, 1
-
     CHOPCONF_t chopconf{0};
     chopconf.tbl = 1;
-    chopconf.toff = timings[0];
+    chopconf.toff = chopper_timing.toff;
     chopconf.intpol = INTERPOLATE;
-    chopconf.hend = timings[1] + 3;
-    chopconf.hstrt = timings[2] - 1;
+    chopconf.hend = chopper_timing.hend + 3;
+    chopconf.hstrt = chopper_timing.hstrt - 1;
     #if ENABLED(SQUARE_WAVE_STEPPING)
       chopconf.dedge = true;
     #endif
@@ -286,16 +282,9 @@
     st.microsteps(microsteps);
     st.iholddelay(10);
     st.TPOWERDOWN(128); // ~2s until driver lowers to hold current
-    st.TCOOLTHRS(0xFFFFF);
-
-    #if ENABLED(ADAPTIVE_CURRENT)
-      COOLCONF_t coolconf{0};
-      coolconf.semin = INCREASE_CURRENT_THRS;
-      coolconf.semax = REDUCE_CURRENT_THRS;
-      st.COOLCONF(coolconf.sr);
-    #endif
 
     st.en_pwm_mode(stealth);
+    st.stored.stealthChop_enabled = stealth;
 
     TMC2160_n::PWMCONF_t pwmconf{0};
     pwmconf.pwm_lim = 12;
@@ -320,7 +309,7 @@
 //
 // TMC2208/2209 Driver objects and inits
 //
-#if HAS_DRIVER(TMC2208) || HAS_DRIVER(TMC2209)
+#if HAS_TMC220x
   #if AXIS_HAS_UART(X)
     #ifdef X_HARDWARE_SERIAL
       TMC_UART_DEFINE(HW, X, X);
@@ -573,6 +562,9 @@
     chopconf.intpol = INTERPOLATE;
     chopconf.hend = chopper_timing.hend + 3;
     chopconf.hstrt = chopper_timing.hstrt - 1;
+    #if ENABLED(SQUARE_WAVE_STEPPING)
+      chopconf.dedge = true;
+    #endif
     st.CHOPCONF(chopconf.sr);
 
     st.rms_current(mA, HOLD_MULTIPLIER);
@@ -597,6 +589,7 @@
     #endif
 
     st.GSTAT(0b111); // Clear
+    delay(200);
   }
 #endif // TMC2209
 
@@ -673,14 +666,12 @@
   void tmc_init(TMCMarlin<TMC5160Stepper, AXIS_LETTER, DRIVER_ID, AXIS_ID> &st, const uint16_t mA, const uint16_t microsteps, const uint32_t thrs, const bool stealth) {
     st.begin();
 
-    int8_t timings[] = CHOPPER_TIMING; // Default 4, -2, 1
-
     CHOPCONF_t chopconf{0};
     chopconf.tbl = 1;
-    chopconf.toff = timings[0];
+    chopconf.toff = chopper_timing.toff;
     chopconf.intpol = INTERPOLATE;
-    chopconf.hend = timings[1] + 3;
-    chopconf.hstrt = timings[2] - 1;
+    chopconf.hend = chopper_timing.hend + 3;
+    chopconf.hstrt = chopper_timing.hstrt - 1;
     #if ENABLED(SQUARE_WAVE_STEPPING)
       chopconf.dedge = true;
     #endif
@@ -691,14 +682,8 @@
     st.iholddelay(10);
     st.TPOWERDOWN(128); // ~2s until driver lowers to hold current
 
-    #if ENABLED(ADAPTIVE_CURRENT)
-      COOLCONF_t coolconf{0};
-      coolconf.semin = INCREASE_CURRENT_THRS;
-      coolconf.semax = REDUCE_CURRENT_THRS;
-      st.COOLCONF(coolconf.sr);
-    #endif
-
     st.en_pwm_mode(stealth);
+    st.stored.stealthChop_enabled = stealth;
 
     TMC2160_n::PWMCONF_t pwmconf{0};
     pwmconf.pwm_lim = 12;

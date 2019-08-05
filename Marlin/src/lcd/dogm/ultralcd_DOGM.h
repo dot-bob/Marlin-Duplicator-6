@@ -1,9 +1,9 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
- * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
+ * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
+#pragma once
 
 /**
  * ultralcd_DOGM.h
@@ -125,7 +126,7 @@
   // Connected via motherboard header
   #define U8G_CLASS U8GLIB_SH1106_128X64
   #define U8G_PARAM DOGLCD_SCK, DOGLCD_MOSI, DOGLCD_CS, LCD_PINS_DC, LCD_PINS_RS
-#elif ENABLED(MKS_ROBIN_TFT)
+#elif ENABLED(FSMC_GRAPHICAL_TFT)
   // Unspecified 320x240 TFT pre-initialized by built-in bootloader
   #define U8G_CLASS U8GLIB_TFT_320X240_UPSCALE_FROM_128X64
   #define U8G_PARAM FSMC_CS_PIN, FSMC_RS_PIN

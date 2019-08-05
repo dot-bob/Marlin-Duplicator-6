@@ -1,10 +1,10 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
- * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
- * Copyright (C) 2017 Victor Perez
+ * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
+ * Copyright (c) 2017 Victor Perez
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,8 @@
 #ifdef ARDUINO_ARCH_STM32F1
 
 #include <libmaple/stm32.h>
+
+#include "../../inc/MarlinConfig.h" // Allow pins/pins.h to set density
 
 #if defined(STM32_HIGH_DENSITY) || defined(STM32_XL_DENSITY)
 
@@ -124,6 +126,8 @@ bool SDIO_ReadBlock(uint32_t blockAddress, uint8_t *data) {
   return false;
 }
 
+uint32_t millis();
+
 bool SDIO_WriteBlock(uint32_t blockAddress, const uint8_t *data) {
   if (SDIO_GetCardState() != SDIO_CARD_TRANSFER) return false;
   if (blockAddress >= SdCard.LogBlockNbr) return false;
@@ -165,9 +169,9 @@ bool SDIO_WriteBlock(uint32_t blockAddress, const uint8_t *data) {
 
 inline uint32_t SDIO_GetCardState(void) { return SDIO_CmdSendStatus(SdCard.RelCardAdd << 16U) ? (SDIO_GetResponse(SDIO_RESP1) >> 9U) & 0x0FU : SDIO_CARD_ERROR; }
 
-// --------------------------------------------------------------------------
+// ------------------------
 // SD Commands and Responses
-// --------------------------------------------------------------------------
+// ------------------------
 
 void SDIO_SendCommand(uint16_t command, uint32_t argument) { SDIO->ARG = argument; SDIO->CMD = (uint32_t)(SDIO_CMD_CPSMEN | command); }
 uint8_t SDIO_GetCommandResponse(void) { return (uint8_t)(SDIO->RESPCMD); }

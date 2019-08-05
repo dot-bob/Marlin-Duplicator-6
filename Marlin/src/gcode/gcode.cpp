@@ -1,9 +1,9 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
- * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
+ * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -322,7 +322,7 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
         case 1: M0_M1(); break;                                   // M1: Conditional stop - Wait for user button press on LCD
       #endif
 
-      #if ENABLED(SPINDLE_LASER_ENABLE)
+      #if HAS_CUTTER
         case 3: M3_M4(false); break;                              // M3: Turn ON Laser | Spindle (clockwise), set Power | Speed
         case 4: M3_M4(true ); break;                              // M4: Turn ON Laser | Spindle (counter-clockwise), set Power | Speed
         case 5: M5(); break;                                      // M5: Turn OFF Laser | Spindle
@@ -430,7 +430,7 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
         //case 191: M191(); break;                                // M191: Wait for chamber temperature to reach target
       #endif
 
-      case 105: M105(); KEEPALIVE_STATE(NOT_BUSY); return;        // M105: Report Temperatures (and say "ok")
+      case 105: M105(); return;                                   // M105: Report Temperatures (and say "ok")
 
       #if ENABLED(AUTO_REPORT_TEMPERATURES) && HAS_TEMP_SENSOR
         case 155: M155(); break;                                  // M155: Set temperature auto-report interval
@@ -669,6 +669,10 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
         case 540: M540(); break;                                  // M540: Set abort on endstop hit for SD printing
       #endif
 
+      #if ENABLED(BAUD_RATE_GCODE)
+        case 575: M575(); break;                                  // M575: Set serial baudrate
+      #endif
+
       #if HAS_BED_PROBE
         case 851: M851(); break;                                  // M851: Set Z Probe Z Offset
       #endif
@@ -795,8 +799,6 @@ void GcodeSuite::process_parsed_command(const bool no_ok/*=false*/) {
 
     default: parser.unknown_command_error();
   }
-
-  KEEPALIVE_STATE(NOT_BUSY);
 
   if (!no_ok) queue.ok_to_send();
 }

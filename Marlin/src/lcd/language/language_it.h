@@ -1,9 +1,9 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
- * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
+ * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -78,6 +78,10 @@
 #define MSG_LASER_OFF                       _UxGT("Laser Off")
 #define MSG_LASER_ON                        _UxGT("Laser On")
 #define MSG_LASER_POWER                     _UxGT("Potenza laser")
+#define MSG_SPINDLE_MENU                    _UxGT("Controllo mandrino")
+#define MSG_SPINDLE_OFF                     _UxGT("Mandrino Off")
+#define MSG_SPINDLE_ON                      _UxGT("Mandrino On")
+#define MSG_SPINDLE_POWER                   _UxGT("Potenza mandrino")
 #define MSG_SPINDLE_REVERSE                 _UxGT("Inverti mandrino")
 #define MSG_SWITCH_PS_ON                    _UxGT("Accendi aliment.")
 #define MSG_SWITCH_PS_OFF                   _UxGT("Spegni aliment.")
@@ -89,6 +93,7 @@
 #define MSG_LEVEL_CORNERS                   _UxGT("Livella spigoli")
 #define MSG_NEXT_CORNER                     _UxGT("Prossimo spigolo")
 #define MSG_EDITING_STOPPED                 _UxGT("Modif. Mesh Fermata")
+#define MSG_PROBING_MESH                    _UxGT("Punto sondato")
 #define MSG_MESH_X                          _UxGT("Indice X")
 #define MSG_MESH_Y                          _UxGT("Indice Y")
 #define MSG_MESH_EDIT_Z                     _UxGT("Valore di Z")
@@ -97,8 +102,9 @@
 #define MSG_UBL_UNHOMED                     _UxGT("Home XYZ prima")
 #define MSG_UBL_TOOLS                       _UxGT("Strumenti UBL")
 #define MSG_UBL_LEVEL_BED                   _UxGT("Unified Bed Leveling")
-#define MSG_LCD_PROBING_MESH                _UxGT("Punto sondato")
 #define MSG_LCD_TILTING_MESH                _UxGT("Punto inclinaz.")
+#define MSG_M48_TEST                        _UxGT("Test sonda M48")
+#define MSG_M48_DEVIATION                   _UxGT("Deviazione")
 #define MSG_IDEX_MENU                       _UxGT("Modo IDEX")
 #define MSG_OFFSETS_MENU                    _UxGT("Strumenti Offsets")
 #define MSG_IDEX_MODE_AUTOPARK              _UxGT("Auto-Park")
@@ -193,6 +199,7 @@
 #define MSG_MOVE_Z                          _UxGT("Muovi Z")
 #define MSG_MOVE_E                          _UxGT("Estrusore")
 #define MSG_HOTEND_TOO_COLD                 _UxGT("Ugello freddo")
+#define MSG_MOVE_Z_DIST                     _UxGT("Muovi di %smm")
 #define MSG_MOVE_01MM                       _UxGT("Muovi di 0.1mm")
 #define MSG_MOVE_1MM                        _UxGT("Muovi di 1mm")
 #define MSG_MOVE_10MM                       _UxGT("Muovi di 10mm")
@@ -305,6 +312,7 @@
 #define MSG_CONTROL_RETRACT_RECOVER_SWAPF   _UxGT("S UnRet V")
 #define MSG_AUTORETRACT                     _UxGT("AutoRitrai")
 #define MSG_FILAMENT_SWAP_LENGTH            _UxGT("Dist. ritrazione")
+#define MSG_FILAMENT_PURGE_LENGTH           _UxGT("Lunghezza spurgo")
 #define MSG_TOOL_CHANGE                     _UxGT("Cambio utensile")
 #define MSG_TOOL_CHANGE_ZLIFT               _UxGT("Risalita Z")
 #define MSG_SINGLENOZZLE_PRIME_SPD          _UxGT("Velocità innesco")
@@ -331,6 +339,11 @@
 #define MSG_BLTOUCH_MODE_STORE_OD           _UxGT("Metti BLTouch a OD")
 #define MSG_BLTOUCH_MODE_ECHO               _UxGT("Segnala modo")
 #define MSG_BLTOUCH_MODE_CHANGE             _UxGT("PERICOLO: Impostazioni errate possono cause danni! Procedo comunque?")
+#define MSG_TOUCHMI_PROBE                   _UxGT("TouchMI")
+#define MSG_TOUCHMI_INIT                    _UxGT("Inizializ.TouchMI")
+#define MSG_TOUCHMI_ZTEST                   _UxGT("Test Z offset")
+#define MSG_TOUCHMI_SAVE                    _UxGT("Memorizzare")
+#define MSG_MANUAL_DEPLOY_TOUCHMI           _UxGT("Estendi TouchMI")
 #define MSG_MANUAL_DEPLOY                   _UxGT("Estendi Sonda-Z")
 #define MSG_BLTOUCH_STOW                    _UxGT("Ritrai BLTouch")
 #define MSG_MANUAL_STOW                     _UxGT("Ritrai Sonda-Z")
@@ -474,6 +487,8 @@
 #define MSG_VTOOLS_RESET                    _UxGT("V-tools ripristin.")
 #define MSG_START_Z                         _UxGT("Z inizio")
 #define MSG_END_Z                           _UxGT("Z fine")
+
+#define MSG_GAMES                           _UxGT("Giochi")
 #define MSG_BRICKOUT                        _UxGT("Brickout")
 #define MSG_INVADERS                        _UxGT("Invaders")
 #define MSG_SNAKE                           _UxGT("Sn4k3")

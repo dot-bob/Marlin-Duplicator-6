@@ -1,9 +1,9 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
- * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
+ * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,7 +49,7 @@
 #define CHOPPER_DEFAULT_19V  { 4,  1, 1 }
 #define CHOPPER_DEFAULT_24V  { 4,  2, 1 }
 #define CHOPPER_DEFAULT_36V  { 5,  2, 4 }
-#define CHOPPER_PRUSAMK3_24V { 4,  1, 4 }
+#define CHOPPER_PRUSAMK3_24V { 3, -2, 6 }
 #define CHOPPER_MARLIN_119   { 5,  2, 3 }
 
 #if ENABLED(MONITOR_DRIVER_STATUS) && !defined(MONITOR_DRIVER_STATUS_INTERVAL_MS)
@@ -140,6 +140,9 @@ class TMCMarlin : public TMC, public TMCStorage<AXIS_LETTER, DRIVER_ID> {
           this->stored.homing_thrs = sgt_val;
         #endif
       }
+      #if ENABLED(SPI_ENDSTOPS)
+        bool test_stall_status();
+      #endif
     #endif
 
     #if HAS_LCD_MENU
@@ -348,17 +351,28 @@ void test_tmc_connection(const bool test_x, const bool test_y, const bool test_z
 #endif
 
 /**
- * TMC2130 specific sensorless homing using stallGuard2.
+ * TMC2130-specific sensorless homing using stallGuard2.
  * stallGuard2 only works when in spreadCycle mode.
- * spreadCycle and stealthChop are mutually exclusive.
+ * spreadCycle and stealthChop are mutually-exclusive.
  *
  * Defined here because of limitations with templates and headers.
  */
 #if USE_SENSORLESS
+
   // Track enabled status of stealthChop and only re-enable where applicable
-  struct sensorless_t {
-    bool x, y, z, x2, y2, z2, z3;
-  };
+  struct sensorless_t { bool x, y, z, x2, y2, z2, z3; };
+
+  #if ENABLED(IMPROVE_HOMING_RELIABILITY)
+    extern millis_t sg_guard_period;
+    constexpr uint16_t default_sg_guard_duration = 400;
+
+    struct slow_homing_t {
+      struct { uint32_t x, y; } acceleration;
+      #if HAS_CLASSIC_JERK
+        struct { float x, y; } jerk;
+      #endif
+    };
+  #endif
 
   bool tmc_enable_stallguard(TMC2130Stepper &st);
   void tmc_disable_stallguard(TMC2130Stepper &st, const bool restore_stealth);
@@ -368,7 +382,42 @@ void test_tmc_connection(const bool test_x, const bool test_y, const bool test_z
 
   bool tmc_enable_stallguard(TMC2660Stepper);
   void tmc_disable_stallguard(TMC2660Stepper, const bool);
-#endif
+
+  #if ENABLED(SPI_ENDSTOPS)
+
+    template<class TMC, char AXIS_LETTER, char DRIVER_ID, AxisEnum AXIS_ID>
+    bool TMCMarlin<TMC, AXIS_LETTER, DRIVER_ID, AXIS_ID>::test_stall_status() {
+      uint16_t sg_result = 0;
+
+      this->switchCSpin(LOW);
+
+      if (this->TMC_SW_SPI != nullptr) {
+        this->TMC_SW_SPI->transfer(TMC2130_n::DRV_STATUS_t::address);
+        this->TMC_SW_SPI->transfer16(0);
+        // We only care about the last 10 bits
+        sg_result = this->TMC_SW_SPI->transfer(0);
+        sg_result <<= 8;
+        sg_result |= this->TMC_SW_SPI->transfer(0);
+      }
+      else {
+        SPI.beginTransaction(SPISettings(16000000/8, MSBFIRST, SPI_MODE3));
+        // Read DRV_STATUS
+        SPI.transfer(TMC2130_n::DRV_STATUS_t::address);
+        SPI.transfer16(0);
+        // We only care about the last 10 bits
+        sg_result = SPI.transfer(0);
+        sg_result <<= 8;
+        sg_result |= SPI.transfer(0);
+        SPI.endTransaction();
+      }
+      this->switchCSpin(HIGH);
+
+      return (sg_result & 0x3FF) == 0;
+    }
+
+  #endif // SPI_ENDSTOPS
+
+#endif // USE_SENSORLESS
 
 #if TMC_HAS_SPI
   void tmc_init_cs_pins();

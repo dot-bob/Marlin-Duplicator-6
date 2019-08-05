@@ -1,9 +1,9 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (C) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
- * Copyright (C) 2011 Camiel Gubbels / Erik van der Zalm
+ * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -334,7 +334,7 @@ class Planner {
       static uint32_t axis_segment_time_us[2][3];
     #endif
 
-    #if ENABLED(ULTRA_LCD)
+    #if HAS_SPI_LCD
       volatile static uint32_t block_buffer_runtime_us; //Theoretical block buffer runtime in µs
     #endif
 
@@ -773,7 +773,7 @@ class Planner {
         // No trapezoid calculated? Don't execute yet.
         if (TEST(block->flag, BLOCK_BIT_RECALCULATE)) return nullptr;
 
-        #if ENABLED(ULTRA_LCD)
+        #if HAS_SPI_LCD
           block_buffer_runtime_us -= block->segment_time_us; // We can't be sure how long an active block will take, so don't count it.
         #endif
 
@@ -789,7 +789,7 @@ class Planner {
       }
 
       // The queue became empty
-      #if ENABLED(ULTRA_LCD)
+      #if HAS_SPI_LCD
         clear_block_buffer_runtime(); // paranoia. Buffer is empty now - so reset accumulated time to zero.
       #endif
 
@@ -806,7 +806,7 @@ class Planner {
         block_buffer_tail = next_block_index(block_buffer_tail);
     }
 
-    #if ENABLED(ULTRA_LCD)
+    #if HAS_SPI_LCD
 
       static uint16_t block_buffer_runtime() {
         #ifdef __AVR__
@@ -948,6 +948,6 @@ class Planner {
     #endif // JUNCTION_DEVIATION
 };
 
-#define PLANNER_XY_FEEDRATE() (MIN(planner.settings.max_feedrate_mm_s[X_AXIS], planner.settings.max_feedrate_mm_s[Y_AXIS]))
+#define PLANNER_XY_FEEDRATE() (_MIN(planner.settings.max_feedrate_mm_s[X_AXIS], planner.settings.max_feedrate_mm_s[Y_AXIS]))
 
 extern Planner planner;
