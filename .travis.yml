@@ -40,14 +40,14 @@ before_script:
   - cd ${TRAVIS_BUILD_DIR}
   #
   # Generate custom version include
-  - generate_version ${TRAVIS_BUILD_DIR}/Marlin/src/inc
-  - cat ${TRAVIS_BUILD_DIR}/Marlin/src/inc/_Version.h
+  - generate_version_header_for_marlin ${TRAVIS_BUILD_DIR}/Marlin
+  - cat ${TRAVIS_BUILD_DIR}/Marlin/_Version.h
   #
 script:
   #
   # Build with the default configurations
   #
-  - build_marlin_pio ${TRAVIS_BUILD_DIR} ${TEST_PLATFORM}
+  - build_marlin
 after_success:
   - ls -lh .pioenvs/megaatmega2560/firmware.hex
   - upload_release .pioenvs/megaatmega2560/firmware.hex
