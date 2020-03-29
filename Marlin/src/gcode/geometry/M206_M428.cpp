@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2020 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
@@ -38,7 +38,7 @@
  */
 void GcodeSuite::M206() {
   LOOP_XYZ(i)
-    if (parser.seen(axis_codes[i]))
+    if (parser.seen(XYZ_CHAR(i)))
       set_home_offset((AxisEnum)i, parser.value_linear_units());
 
   #if ENABLED(MORGAN_SCARA)
@@ -63,14 +63,14 @@ void GcodeSuite::M206() {
 void GcodeSuite::M428() {
   if (axis_unhomed_error()) return;
 
-  float diff[XYZ];
+  xyz_float_t diff;
   LOOP_XYZ(i) {
     diff[i] = base_home_pos((AxisEnum)i) - current_position[i];
     if (!WITHIN(diff[i], -20, 20) && home_dir((AxisEnum)i) > 0)
       diff[i] = -current_position[i];
     if (!WITHIN(diff[i], -20, 20)) {
-      SERIAL_ERROR_MSG(MSG_ERR_M428_TOO_FAR);
-      LCD_ALERTMESSAGEPGM("Err: Too far!");
+      SERIAL_ERROR_MSG(STR_ERR_M428_TOO_FAR);
+      LCD_ALERTMESSAGEPGM_P(PSTR("Err: Too far!"));
       BUZZ(200, 40);
       return;
     }

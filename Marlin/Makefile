@@ -92,6 +92,9 @@ U8GLIB             ?= 1
 # this defines whether to include the Trinamic TMCStepper library
 TMC                ?= 1
 
+# this defines whether to include the AdaFruit NeoPixel library
+NEOPIXEL           ?= 0
+
 ############
 # Try to automatically determine whether RELOC_WORKAROUND is needed based
 # on GCC versions:
@@ -177,80 +180,95 @@ else ifeq ($(HARDWARE_MOTHERBOARD),1105)
 else ifeq ($(HARDWARE_MOTHERBOARD),1106)
 # MKS v1.5 with Allegro A4982 stepper drivers
 else ifeq ($(HARDWARE_MOTHERBOARD),1107)
-# MKS BASE 1.0 with Heroic HR4982 stepper drivers
+# MKS v1.6 with Allegro A4982 stepper drivers
 else ifeq ($(HARDWARE_MOTHERBOARD),1108)
-# MKS GEN v1.3 or 1.4
+
+# MKS BASE 1.0 with Heroic HR4982 stepper drivers
 else ifeq ($(HARDWARE_MOTHERBOARD),1109)
-# MKS GEN L
+# MKS GEN v1.3 or 1.4
 else ifeq ($(HARDWARE_MOTHERBOARD),1110)
-# zrib V2.0 control board (Chinese knock off RAMPS replica)
+# MKS GEN L
 else ifeq ($(HARDWARE_MOTHERBOARD),1111)
-# Bigtreetech or BIQU KFB2.0
+# zrib V2.0 control board (Chinese knock off RAMPS replica)
 else ifeq ($(HARDWARE_MOTHERBOARD),1112)
-# Felix 2.0+ Electronics Board (RAMPS like)
+# BigTreeTech or BIQU KFB2.0
 else ifeq ($(HARDWARE_MOTHERBOARD),1113)
-# Invent-A-Part RigidBoard
+# Felix 2.0+ Electronics Board (RAMPS like)
 else ifeq ($(HARDWARE_MOTHERBOARD),1114)
-# Invent-A-Part RigidBoard V2
+# Invent-A-Part RigidBoard
 else ifeq ($(HARDWARE_MOTHERBOARD),1115)
-# Sainsmart 2-in-1 board
+# Invent-A-Part RigidBoard V2
 else ifeq ($(HARDWARE_MOTHERBOARD),1116)
-# Ultimaker
+# Sainsmart 2-in-1 board
 else ifeq ($(HARDWARE_MOTHERBOARD),1117)
-# Ultimaker (Older electronics. Pre 1.5.4. This is rare)
+# Ultimaker
 else ifeq ($(HARDWARE_MOTHERBOARD),1118)
+# Ultimaker (Older electronics. Pre 1.5.4. This is rare)
+else ifeq ($(HARDWARE_MOTHERBOARD),1119)
   MCU ?= atmega1280
 
 # Azteeg X3
-else ifeq ($(HARDWARE_MOTHERBOARD),1119)
-# Azteeg X3 Pro
 else ifeq ($(HARDWARE_MOTHERBOARD),1120)
-# Ultimainboard 2.x (Uses TEMP_SENSOR 20)
+# Azteeg X3 Pro
 else ifeq ($(HARDWARE_MOTHERBOARD),1121)
-# Rumba
+# Ultimainboard 2.x (Uses TEMP_SENSOR 20)
 else ifeq ($(HARDWARE_MOTHERBOARD),1122)
-# Raise3D Rumba
+# Rumba
 else ifeq ($(HARDWARE_MOTHERBOARD),1123)
-# Rapide Lite RL200 Rumba
+# Raise3D Rumba
 else ifeq ($(HARDWARE_MOTHERBOARD),1124)
-# Formbot T-Rex 2 Plus
+# Rapide Lite RL200 Rumba
 else ifeq ($(HARDWARE_MOTHERBOARD),1125)
-# Formbot T-Rex 3
+# Formbot T-Rex 2 Plus
 else ifeq ($(HARDWARE_MOTHERBOARD),1126)
-# Formbot Raptor
+# Formbot T-Rex 3
 else ifeq ($(HARDWARE_MOTHERBOARD),1127)
-# Formbot Raptor 2
+# Formbot Raptor
 else ifeq ($(HARDWARE_MOTHERBOARD),1128)
-# bq ZUM Mega 3D
+# Formbot Raptor 2
 else ifeq ($(HARDWARE_MOTHERBOARD),1129)
-# MakeBoard Mini v2.1.2 is a control board sold by MicroMake
+# bq ZUM Mega 3D
 else ifeq ($(HARDWARE_MOTHERBOARD),1130)
-# TriGorilla Anycubic version 1.3 based on RAMPS EFB
+# MakeBoard Mini v2.1.2 is a control board sold by MicroMake
 else ifeq ($(HARDWARE_MOTHERBOARD),1131)
-# TriGorilla Anycubic version 1.4 based on RAMPS EFB
+# TriGorilla Anycubic version 1.3 based on RAMPS EFB
 else ifeq ($(HARDWARE_MOTHERBOARD),1132)
-# TriGorilla Anycubic version 1.4 Rev 1.1
+# TriGorilla Anycubic version 1.4 based on RAMPS EFB
 else ifeq ($(HARDWARE_MOTHERBOARD),1133)
-# Creality: Ender-4, CR-8
+# TriGorilla Anycubic version 1.4 Rev 1.1
 else ifeq ($(HARDWARE_MOTHERBOARD),1134)
-# Creality: CR10S, CR20, CR-X
+# Creality: Ender-4, CR-8
 else ifeq ($(HARDWARE_MOTHERBOARD),1135)
-# Dagoma F5
+# Creality: CR10S, CR20, CR-X
 else ifeq ($(HARDWARE_MOTHERBOARD),1136)
-# FYSETC F6
+# Dagoma F5
 else ifeq ($(HARDWARE_MOTHERBOARD),1137)
-# Duplicator i3 Plus
+# FYSETC F6 1.3
 else ifeq ($(HARDWARE_MOTHERBOARD),1138)
-# VORON
+# FYSETC F6 1.5
 else ifeq ($(HARDWARE_MOTHERBOARD),1139)
-# TRONXY V3 1.0
+# Duplicator i3 Plus
 else ifeq ($(HARDWARE_MOTHERBOARD),1140)
-# Z-Bolt X Series
+# VORON
 else ifeq ($(HARDWARE_MOTHERBOARD),1141)
-# TT OSCAR
+# TRONXY V3 1.0
 else ifeq ($(HARDWARE_MOTHERBOARD),1142)
-# Overlord/Overlord Pro
+# Z-Bolt X Series
 else ifeq ($(HARDWARE_MOTHERBOARD),1143)
+# TT OSCAR
+else ifeq ($(HARDWARE_MOTHERBOARD),1144)
+# Overlord/Overlord Pro
+else ifeq ($(HARDWARE_MOTHERBOARD),1145)
+# ADIMLab Gantry v1
+else ifeq ($(HARDWARE_MOTHERBOARD),1146)
+# ADIMLab Gantry v2
+else ifeq ($(HARDWARE_MOTHERBOARD),1147)
+# BIQU Tango V1
+else ifeq ($(HARDWARE_MOTHERBOARD),1148)
+# MKS GEN L V2
+else ifeq ($(HARDWARE_MOTHERBOARD),1149)
+# Copymaster 3D
+else ifeq ($(HARDWARE_MOTHERBOARD),1150)
 
 #
 # RAMBo and derivatives
@@ -277,42 +295,44 @@ else ifeq ($(HARDWARE_MOTHERBOARD),1205)
 else ifeq ($(HARDWARE_MOTHERBOARD),1300)
 # Cartesio CN Controls V12
 else ifeq ($(HARDWARE_MOTHERBOARD),1301)
-# Cheaptronic v1.0
+# Cartesio CN Controls V15
 else ifeq ($(HARDWARE_MOTHERBOARD),1302)
-# Cheaptronic v2.0
+# Cheaptronic v1.0
 else ifeq ($(HARDWARE_MOTHERBOARD),1303)
-# Makerbot Mightyboard Revision E
+# Cheaptronic v2.0
 else ifeq ($(HARDWARE_MOTHERBOARD),1304)
-# Megatronics
+# Makerbot Mightyboard Revision E
 else ifeq ($(HARDWARE_MOTHERBOARD),1305)
-# Megatronics v2.0
+# Megatronics
 else ifeq ($(HARDWARE_MOTHERBOARD),1306)
-# Megatronics v3.0
+# Megatronics v2.0
 else ifeq ($(HARDWARE_MOTHERBOARD),1307)
-# Megatronics v3.1
+# Megatronics v3.0
 else ifeq ($(HARDWARE_MOTHERBOARD),1308)
-# Megatronics v3.2
+# Megatronics v3.1
 else ifeq ($(HARDWARE_MOTHERBOARD),1309)
-# Elefu Ra Board (v3)
+# Megatronics v3.2
 else ifeq ($(HARDWARE_MOTHERBOARD),1310)
-# Leapfrog
+# Elefu Ra Board (v3)
 else ifeq ($(HARDWARE_MOTHERBOARD),1311)
-# Mega controller
+# Leapfrog
 else ifeq ($(HARDWARE_MOTHERBOARD),1312)
-# Geeetech GT2560 Rev B for Mecreator2
+# Mega controller
 else ifeq ($(HARDWARE_MOTHERBOARD),1313)
-# Geeetech GT2560 Rev. A
+# Geeetech GT2560 Rev B for Mecreator2
 else ifeq ($(HARDWARE_MOTHERBOARD),1314)
-# Geeetech GT2560 Rev. A+ (with auto level probe)
+# Geeetech GT2560 Rev. A
 else ifeq ($(HARDWARE_MOTHERBOARD),1315)
-# Geeetech GT2560 Rev B for A10(M/D)
+# Geeetech GT2560 Rev. A+ (with auto level probe)
 else ifeq ($(HARDWARE_MOTHERBOARD),1316)
-# Geeetech GT2560 Rev B for A20(M/D)
+# Geeetech GT2560 Rev B for A10(M/D)
 else ifeq ($(HARDWARE_MOTHERBOARD),1317)
-# Einstart retrofit
+# Geeetech GT2560 Rev B for A20(M/D)
 else ifeq ($(HARDWARE_MOTHERBOARD),1318)
-# Wanhao 0ne+ i3 Mini
+# Einstart retrofit
 else ifeq ($(HARDWARE_MOTHERBOARD),1319)
+# Wanhao 0ne+ i3 Mini
+else ifeq ($(HARDWARE_MOTHERBOARD),1320)
 
 #
 # ATmega1281, ATmega2561
@@ -687,7 +707,7 @@ CXXSTANDARD = -std=gnu++11
 CDEBUG = -g$(DEBUG)
 CWARN   = -Wall -Wstrict-prototypes -Wno-packed-bitfield-compat -Wno-pragmas -Wunused-parameter
 CXXWARN = -Wall                     -Wno-packed-bitfield-compat -Wno-pragmas -Wunused-parameter
-CTUNING = -fsigned-char -funsigned-bitfields -fpack-struct -fno-exceptions \
+CTUNING = -fsigned-char -funsigned-bitfields -fno-exceptions \
           -fshort-enums -ffunction-sections -fdata-sections
 ifneq ($(HARDWARE_MOTHERBOARD),)
   CTUNING += -DMOTHERBOARD=${HARDWARE_MOTHERBOARD}

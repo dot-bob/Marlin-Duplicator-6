@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2020 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
@@ -32,5 +32,6 @@ typedef LEDColor LEDColor;
 void pca9632_set_led_color(const LEDColor &color);
 
 #if ENABLED(PCA9632_BUZZER)
-  void pca9632_buzz(uint16_t const, uint16_t);
+  #include <stdint.h>
+  void pca9632_buzz(const long, const uint16_t);
 #endif

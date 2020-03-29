@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2020 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
@@ -25,6 +25,6 @@
  * Azteeg X1 pin assignments
  */
 
-#define BOARD_NAME "Azteeg X1"
+#define BOARD_INFO_NAME "Azteeg X1"
 
 #include "pins_SANGUINOLOLU_12.h"

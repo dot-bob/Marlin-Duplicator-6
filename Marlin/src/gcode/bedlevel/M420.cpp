@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2020 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
@@ -27,13 +27,14 @@
 #include "../gcode.h"
 #include "../../feature/bedlevel/bedlevel.h"
 #include "../../module/planner.h"
+#include "../../module/probe.h"
 
 #if ENABLED(EEPROM_SETTINGS)
   #include "../../module/configuration_store.h"
 #endif
 
 #if ENABLED(EXTENSIBLE_UI)
-  #include "../../lcd/extensible_ui/ui_api.h"
+  #include "../../lcd/extui/ui_api.h"
 #endif
 
 //#define M420_C_USE_MEAN
@@ -63,24 +64,24 @@ void GcodeSuite::M420() {
 
   #if ENABLED(MARLIN_DEV_MODE)
     if (parser.intval('S') == 2) {
+      const float x_min = probe.min_x(), x_max = probe.max_x(),
+                  y_min = probe.min_y(), y_max = probe.max_y();
       #if ENABLED(AUTO_BED_LEVELING_BILINEAR)
-        bilinear_start[X_AXIS] = MIN_PROBE_X;
-        bilinear_start[Y_AXIS] = MIN_PROBE_Y;
-        bilinear_grid_spacing[X_AXIS] = (MAX_PROBE_X - (MIN_PROBE_X)) / (GRID_MAX_POINTS_X - 1);
-        bilinear_grid_spacing[Y_AXIS] = (MAX_PROBE_Y - (MIN_PROBE_Y)) / (GRID_MAX_POINTS_Y - 1);
+        bilinear_start.set(x_min, y_min);
+        bilinear_grid_spacing.set((x_max - x_min) / (GRID_MAX_POINTS_X - 1),
+                                  (y_max - y_min) / (GRID_MAX_POINTS_Y - 1));
       #endif
-      for (uint8_t x = 0; x < GRID_MAX_POINTS_X; x++)
-        for (uint8_t y = 0; y < GRID_MAX_POINTS_Y; y++) {
-          Z_VALUES(x, y) = 0.001 * random(-200, 200);
-          #if ENABLED(EXTENSIBLE_UI)
-            ExtUI::onMeshUpdate(x, y, Z_VALUES(x, y));
-          #endif
-        }
-      SERIAL_ECHOPGM("Simulated " STRINGIFY(GRID_MAX_POINTS_X) "x" STRINGIFY(GRID_MAX_POINTS_X) " mesh ");
-      SERIAL_ECHOPAIR(" (", MIN_PROBE_X);
-      SERIAL_CHAR(','); SERIAL_ECHO(MIN_PROBE_Y);
-      SERIAL_ECHOPAIR(")-(", MAX_PROBE_X);
-      SERIAL_CHAR(','); SERIAL_ECHO(MAX_PROBE_Y);
+      GRID_LOOP(x, y) {
+        Z_VALUES(x, y) = 0.001 * random(-200, 200);
+        #if ENABLED(EXTENSIBLE_UI)
+          ExtUI::onMeshUpdate(x, y, Z_VALUES(x, y));
+        #endif
+      }
+      SERIAL_ECHOPGM("Simulated " STRINGIFY(GRID_MAX_POINTS_X) "x" STRINGIFY(GRID_MAX_POINTS_Y) " mesh ");
+      SERIAL_ECHOPAIR(" (", x_min);
+      SERIAL_CHAR(','); SERIAL_ECHO(y_min);
+      SERIAL_ECHOPAIR(")-(", x_max);
+      SERIAL_CHAR(','); SERIAL_ECHO(y_max);
       SERIAL_ECHOLNPGM(")");
     }
   #endif
@@ -89,7 +90,7 @@ void GcodeSuite::M420() {
   // (Don't disable for just M420 or M420 V)
   if (seen_S && !to_enable) set_bed_leveling_enabled(false);
 
-  const float oldpos[] = { current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS] };
+  xyz_pos_t oldpos = current_position;
 
   #if ENABLED(AUTO_BED_LEVELING_UBL)
 
@@ -125,7 +126,7 @@ void GcodeSuite::M420() {
     }
 
     // L or V display the map info
-    if (parser.seen('L') || parser.seen('V')) {
+    if (parser.seen("LV")) {
       ubl.display_map(parser.byteval('T'));
       SERIAL_ECHOPGM("Mesh is ");
       if (!ubl.mesh_is_valid()) SERIAL_ECHOPGM("in");
@@ -233,7 +234,7 @@ void GcodeSuite::M420() {
 
   // Error if leveling failed to enable or reenable
   if (to_enable && !planner.leveling_active)
-    SERIAL_ERROR_MSG(MSG_ERR_M420_FAILED);
+    SERIAL_ERROR_MSG(STR_ERR_M420_FAILED);
 
   SERIAL_ECHO_START();
   SERIAL_ECHOPGM("Bed Leveling ");
@@ -245,11 +246,11 @@ void GcodeSuite::M420() {
     if (planner.z_fade_height > 0.0)
       SERIAL_ECHOLN(planner.z_fade_height);
     else
-      SERIAL_ECHOLNPGM(MSG_OFF);
+      SERIAL_ECHOLNPGM(STR_OFF);
   #endif
 
   // Report change in position
-  if (memcmp(oldpos, current_position, sizeof(oldpos)))
+  if (oldpos != current_position)
     report_current_position();
 }
 

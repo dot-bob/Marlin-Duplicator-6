@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2020 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
@@ -20,22 +20,22 @@
  *
  */
 
-#include "../../inc/MarlinConfig.h"
+#include "../../inc/MarlinConfigPre.h"
 
 #if HAS_RESUME_CONTINUE
 
 #include "../gcode.h"
-#include "../../module/stepper.h"
+#include "../../module/planner.h"
+
+#include "../../inc/MarlinConfig.h"
 
 #if HAS_LCD_MENU
   #include "../../lcd/ultralcd.h"
 #endif
 
 #if ENABLED(EXTENSIBLE_UI)
-  #include "../../lcd/extensible_ui/ui_api.h"
+  #include "../../lcd/extui/ui_api.h"
 #endif
-
-#include "../../sd/cardreader.h"
 
 #if HAS_LEDS_OFF_FLAG
   #include "../../feature/leds/printer_event_leds.h"
@@ -50,28 +50,24 @@
  * M1: Conditional stop   - Wait for user button press on LCD
  */
 void GcodeSuite::M0_M1() {
-  const char * const args = parser.string_arg;
-
   millis_t ms = 0;
-  bool hasP = false, hasS = false;
-  if (parser.seenval('P')) {
-    ms = parser.value_millis(); // milliseconds to wait
-    hasP = ms > 0;
-  }
-  if (parser.seenval('S')) {
-    ms = parser.value_millis_from_seconds(); // seconds to wait
-    hasS = ms > 0;
-  }
-
-  const bool has_message = !hasP && !hasS && args && *args;
+  if (parser.seenval('P')) ms = parser.value_millis();              // Milliseconds to wait
+  if (parser.seenval('S')) ms = parser.value_millis_from_seconds(); // Seconds to wait
 
   planner.synchronize();
 
+  #if HAS_LEDS_OFF_FLAG
+    const bool seenQ = parser.seen('Q');
+    if (seenQ) printerEventLEDs.onPrintCompleted();  // Change LED color for Print Completed
+  #else
+    constexpr bool seenQ = false;
+  #endif
+
   #if HAS_LCD_MENU
 
-    if (has_message)
-      ui.set_status(args, true);
-    else {
+    if (parser.string_arg)
+      ui.set_status(parser.string_arg, true);
+    else if (!seenQ) {
       LCD_MESSAGEPGM(MSG_USERWAIT);
       #if ENABLED(LCD_PROGRESS_BAR) && PROGRESS_MSG_EXPIRE > 0
         ui.reset_progress_bar_timeout();
@@ -79,14 +75,17 @@ void GcodeSuite::M0_M1() {
     }
 
   #elif ENABLED(EXTENSIBLE_UI)
-
-    ExtUI::onUserConfirmRequired(has_message ? args : MSG_USERWAIT); // SRAM string
-
+    if (!seenQ) {
+      if (parser.string_arg)
+        ExtUI::onUserConfirmRequired(parser.string_arg); // Can this take an SRAM string??
+      else
+        ExtUI::onUserConfirmRequired_P(GET_TEXT(MSG_USERWAIT));
+    }
   #else
 
-    if (has_message) {
+    if (parser.string_arg) {
       SERIAL_ECHO_START();
-      SERIAL_ECHOLN(args);
+      SERIAL_ECHOLN(parser.string_arg);
     }
 
   #endif
@@ -95,26 +94,18 @@ void GcodeSuite::M0_M1() {
   wait_for_user = true;
 
   #if ENABLED(HOST_PROMPT_SUPPORT)
-    host_prompt_do(PROMPT_USER_CONTINUE, PSTR("M0/1 Break Called"), PSTR("Continue"));
+    if (!seenQ) host_prompt_do(PROMPT_USER_CONTINUE, parser.codenum ? PSTR("M1 Stop") : PSTR("M0 Stop"), CONTINUE_STR);
   #endif
 
-  if (ms > 0) {
-    ms += millis();  // wait until this time for a click
-    while (PENDING(millis(), ms) && wait_for_user) idle();
-  }
-  else
-    while (wait_for_user) idle();
-
-  #if ENABLED(EXTENSIBLE_UI)
-    ExtUI::onUserConfirmRequired(nullptr);
-  #endif
+  if (ms > 0) ms += millis();  // wait until this time for a click
+  while (wait_for_user && (ms == 0 || PENDING(millis(), ms))) idle();
 
   #if HAS_LEDS_OFF_FLAG
     printerEventLEDs.onResumeAfterWait();
   #endif
 
   #if HAS_LCD_MENU
-    ui.reset_status();
+    if (!seenQ) ui.reset_status();
   #endif
 
   wait_for_user = false;

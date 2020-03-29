@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2020 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,10 +40,13 @@ enum XPTCoordinate : uint8_t {
 
 class XPT2046 {
 public:
-  static void init(void);
+  static void init();
   static uint8_t read_buttons();
-private:
+  bool getTouchPoint(uint16_t &x, uint16_t &y);
   static bool isTouched();
+  inline void waitForRelease() { while (isTouched()) { /* nada */ } }
+  inline void waitForTouch(uint16_t &x, uint16_t &y) { while (!getTouchPoint(x, y)) { /* nada */ } }
+private:
   static uint16_t getInTouch(const XPTCoordinate coordinate);
 };
 

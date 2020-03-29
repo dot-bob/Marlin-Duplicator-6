@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2020 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
@@ -36,14 +36,14 @@
 
 #include "dac_mcp4728.h"
 
-uint16_t mcp4728_values[XYZE];
+xyze_uint_t mcp4728_values;
 
 /**
  * Begin I2C, get current values (input register and eeprom) of mcp4728
  */
 void mcp4728_init() {
   Wire.begin();
-  Wire.requestFrom(int(DAC_DEV_ADDRESS), 24);
+  Wire.requestFrom(I2C_ADDRESS(DAC_DEV_ADDRESS), 24);
   while (Wire.available()) {
     char deviceID = Wire.read(),
          hiByte = Wire.read(),
@@ -121,8 +121,8 @@ uint8_t mcp4728_getDrvPct(const uint8_t channel) { return uint8_t(100.0 * mcp472
  * Receives all Drive strengths as 0-100 percent values, updates
  * DAC Values array and calls fastwrite to update the DAC.
  */
-void mcp4728_setDrvPct(uint8_t pct[XYZE]) {
-  LOOP_XYZE(i) mcp4728_values[i] = 0.01 * pct[i] * (DAC_STEPPER_MAX);
+void mcp4728_setDrvPct(xyze_uint8_t &pct) {
+  mcp4728_values *= 0.01 * pct * (DAC_STEPPER_MAX);
   mcp4728_fastWrite();
 }
 

@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2020 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
@@ -31,7 +31,7 @@
 #include "tempstat.h"
 #include "../../module/temperature.h"
 
-void handle_status_leds(void) {
+void handle_status_leds() {
   static int8_t old_red = -1;  // Invalid value to force LED initialization
   static millis_t next_status_led_update_ms = 0;
   if (ELAPSED(millis(), next_status_led_update_ms)) {

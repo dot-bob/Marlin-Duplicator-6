@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2020 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
@@ -39,7 +39,7 @@
 #include "../../../module/stepper.h"
 
 #if ENABLED(EXTENSIBLE_UI)
-  #include "../../../lcd/extensible_ui/ui_api.h"
+  #include "../../../lcd/extui/ui_api.h"
 #endif
 
 // Save 130 bytes with non-duplication of PSTR
@@ -88,7 +88,7 @@ void GcodeSuite::G29() {
     case MeshStart:
       mbl.reset();
       mbl_probe_index = 0;
-      if (!ui.wait_for_bl_move) {
+      if (!ui.wait_for_move) {
         queue.inject_P(PSTR("G28\nG29 S2"));
         return;
       }
@@ -110,7 +110,7 @@ void GcodeSuite::G29() {
       }
       else {
         // Save Z for the previous mesh position
-        mbl.set_zigzag_z(mbl_probe_index - 1, current_position[Z_AXIS]);
+        mbl.set_zigzag_z(mbl_probe_index - 1, current_position.z);
         #if HAS_SOFTWARE_ENDSTOPS
           soft_endstops_enabled = saved_soft_endstops_state;
         #endif
@@ -124,11 +124,11 @@ void GcodeSuite::G29() {
         #endif
 
         mbl.zigzag(mbl_probe_index++, ix, iy);
-        _manual_goto_xy(mbl.index_to_xpos[ix], mbl.index_to_ypos[iy]);
+        _manual_goto_xy({ mbl.index_to_xpos[ix], mbl.index_to_ypos[iy] });
       }
       else {
         // One last "return to the bed" (as originally coded) at completion
-        current_position[Z_AXIS] = MANUAL_PROBE_HEIGHT;
+        current_position.z = MANUAL_PROBE_HEIGHT;
         line_to_current_position();
         planner.synchronize();
 
@@ -142,14 +142,13 @@ void GcodeSuite::G29() {
         set_bed_leveling_enabled(true);
 
         #if ENABLED(MESH_G28_REST_ORIGIN)
-          current_position[Z_AXIS] = 0;
-          set_destination_from_current();
-          buffer_line_to_destination(homing_feedrate(Z_AXIS));
+          current_position.z = 0;
+          line_to_current_position(homing_feedrate(Z_AXIS));
           planner.synchronize();
         #endif
 
         #if ENABLED(LCD_BED_LEVELING)
-          ui.wait_for_bl_move = false;
+          ui.wait_for_move = false;
         #endif
       }
       break;

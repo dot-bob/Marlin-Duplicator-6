@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2020 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
@@ -79,9 +79,9 @@
         }
         mirrored_duplication_mode = true;
         stepper.set_directions();
-        float x_jog = current_position[X_AXIS] - .1;
+        float x_jog = current_position.x - .1;
         for (uint8_t i = 2; --i;) {
-          planner.buffer_line(x_jog, current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS], feedrate_mm_s, 0);
+          planner.buffer_line(x_jog, current_position.y, current_position.z, current_position.e, feedrate_mm_s, 0);
           x_jog += .1;
         }
         return;
@@ -122,7 +122,7 @@
         DEBUG_ECHOPAIR("\nActive Ext: ", int(active_extruder));
         if (!active_extruder_parked) DEBUG_ECHOPGM(" NOT ");
         DEBUG_ECHOPGM(" parked.");
-        DEBUG_ECHOPAIR("\nactive_extruder_x_pos: ", current_position[X_AXIS]);
+        DEBUG_ECHOPAIR("\nactive_extruder_x_pos: ", current_position.x);
         DEBUG_ECHOPAIR("\ninactive_extruder_x_pos: ", inactive_extruder_x_pos);
         DEBUG_ECHOPAIR("\nextruder_duplication_enabled: ", int(extruder_duplication_enabled));
         DEBUG_ECHOPAIR("\nduplicate_extruder_x_offset: ", duplicate_extruder_x_offset);
@@ -137,8 +137,8 @@
         DEBUG_EOL();
 
         HOTEND_LOOP() {
-          DEBUG_ECHOPAIR(" nozzle:", int(e));
-          LOOP_XYZ(j) DEBUG_ECHOPAIR("  hotend_offset[", axis_codes[j], "_AXIS][", int(e), "]=", hotend_offset[j][e]);
+          DEBUG_ECHOPAIR_P(SP_T_STR, int(e));
+          LOOP_XYZ(a) DEBUG_ECHOPAIR("  hotend_offset[", int(e), "].", XYZ_CHAR(a) | 0x20, "=", hotend_offset[e][a]);
           DEBUG_EOL();
         }
         DEBUG_EOL();
@@ -167,7 +167,7 @@
       extruder_duplication_enabled = ena && (duplication_e_mask >= 3);
     }
     SERIAL_ECHO_START();
-    SERIAL_ECHOPGM(MSG_DUPLICATION_MODE);
+    SERIAL_ECHOPGM(STR_DUPLICATION_MODE);
     serialprint_onoff(extruder_duplication_enabled);
     if (ena) {
       SERIAL_ECHOPGM(" ( ");

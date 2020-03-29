@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2020 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
@@ -31,6 +31,7 @@
 #undef sq             // Redefined by teensy3/wiring.h
 #undef SBI            // Redefined by arduino/const_functions.h
 #undef CBI            // Redefined by arduino/const_functions.h
+#undef UNUSED         // Redefined by stm32f4xx_hal_def.h
 
 #include <Arduino.h>  // NOTE: If included earlier then this line is a NOOP
 
@@ -57,6 +58,9 @@
     //#define strchr_P(s,c) strchr(s,c)
   #endif
 
+  #ifndef snprintf_P
+    #define snprintf_P snprintf
+  #endif
   #ifndef vsnprintf_P
     #define vsnprintf_P vsnprintf
   #endif
@@ -73,4 +77,9 @@
 
 #ifndef M_PI
   #define M_PI 3.14159265358979323846f
+#endif
+
+// Remove compiler warning on an unused variable
+#ifndef UNUSED
+  #define UNUSED(x) ((void)(x))
 #endif

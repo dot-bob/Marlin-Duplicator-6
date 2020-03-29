@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2020 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
@@ -39,6 +39,7 @@ typedef struct {
 enum PauseMode : char {
   PAUSE_MODE_SAME,
   PAUSE_MODE_PAUSE_PRINT,
+  PAUSE_MODE_CHANGE_FILAMENT,
   PAUSE_MODE_LOAD_FILAMENT,
   PAUSE_MODE_UNLOAD_FILAMENT
 };
@@ -58,14 +59,15 @@ enum PauseMessage : char {
   PAUSE_MESSAGE_HEATING
 };
 
-enum PauseMenuResponse : char {
-  PAUSE_RESPONSE_WAIT_FOR,
-  PAUSE_RESPONSE_EXTRUDE_MORE,
-  PAUSE_RESPONSE_RESUME_PRINT
-};
-
-extern PauseMode pause_mode;
-extern PauseMenuResponse pause_menu_response;
+#if HAS_LCD_MENU
+  enum PauseMenuResponse : char {
+    PAUSE_RESPONSE_WAIT_FOR,
+    PAUSE_RESPONSE_EXTRUDE_MORE,
+    PAUSE_RESPONSE_RESUME_PRINT
+  };
+  extern PauseMenuResponse pause_menu_response;
+  extern PauseMode pause_mode;
+#endif
 
 extern fil_change_settings_t fc_settings[EXTRUDERS];
 
@@ -81,9 +83,9 @@ extern uint8_t did_pause_print;
   #define DXC_PASS
 #endif
 
-void do_pause_e_move(const float &length, const float &fr_mm_s);
+void do_pause_e_move(const float &length, const feedRate_t &fr_mm_s);
 
-bool pause_print(const float &retract, const point_t &park_point, const float &unload_length=0, const bool show_lcd=false DXC_PARAMS);
+bool pause_print(const float &retract, const xyz_pos_t &park_point, const float &unload_length=0, const bool show_lcd=false DXC_PARAMS);
 
 void wait_for_confirmation(const bool is_reload=false, const int8_t max_beep_count=0 DXC_PARAMS);
 

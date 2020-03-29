@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2020 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
@@ -33,4 +33,4 @@ void dac_current_raw(uint8_t channel, uint16_t val);
 void dac_print_values();
 void dac_commit_eeprom();
 uint8_t dac_current_get_percent(AxisEnum axis);
-void dac_current_set_percents(const uint8_t pct[XYZE]);
+void dac_current_set_percents(xyze_uint8_t &pct);

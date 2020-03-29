@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2020 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
@@ -20,7 +20,7 @@
  *
  */
 
-#include "../../Marlin.h"
+#include "../../MarlinCore.h"
 
 #if ENABLED(CALIBRATION_GCODE)
 
@@ -36,6 +36,21 @@
 #include "../../module/tool_change.h"
 #include "../../module/endstops.h"
 #include "../../feature/bedlevel/bedlevel.h"
+
+#if !AXIS_CAN_CALIBRATE(X)
+  #undef CALIBRATION_MEASURE_LEFT
+  #undef CALIBRATION_MEASURE_RIGHT
+#endif
+
+#if !AXIS_CAN_CALIBRATE(Y)
+  #undef CALIBRATION_MEASURE_FRONT
+  #undef CALIBRATION_MEASURE_BACK
+#endif
+
+#if !AXIS_CAN_CALIBRATE(Z)
+  #undef CALIBRATION_MEASURE_AT_TOP_EDGES
+#endif
+
 
 /**
  * G425 backs away from the calibration object by various distances
@@ -56,22 +71,26 @@
   #define CALIBRATION_MEASUREMENT_CERTAIN   0.5 // mm
 #endif
 
-#define HAS_X_CENTER BOTH(CALIBRATION_MEASURE_LEFT, CALIBRATION_MEASURE_RIGHT)
-#define HAS_Y_CENTER BOTH(CALIBRATION_MEASURE_FRONT, CALIBRATION_MEASURE_BACK)
+#if BOTH(CALIBRATION_MEASURE_LEFT, CALIBRATION_MEASURE_RIGHT)
+  #define HAS_X_CENTER 1
+#endif
+#if BOTH(CALIBRATION_MEASURE_FRONT, CALIBRATION_MEASURE_BACK)
+  #define HAS_Y_CENTER 1
+#endif
 
 enum side_t : uint8_t { TOP, RIGHT, FRONT, LEFT, BACK, NUM_SIDES };
 
+static constexpr xyz_pos_t true_center CALIBRATION_OBJECT_CENTER;
+static constexpr xyz_float_t dimensions CALIBRATION_OBJECT_DIMENSIONS;
+static constexpr xy_float_t nod = { CALIBRATION_NOZZLE_OUTER_DIAMETER, CALIBRATION_NOZZLE_OUTER_DIAMETER };
+
 struct measurements_t {
-  static constexpr float dimensions[XYZ] = CALIBRATION_OBJECT_DIMENSIONS;
-  static constexpr float true_center[XYZ] = CALIBRATION_OBJECT_CENTER;
+  xyz_pos_t obj_center = true_center; // Non-static must be assigned from xyz_pos_t
 
-  float obj_center[XYZ] = CALIBRATION_OBJECT_CENTER;
-  float obj_side[NUM_SIDES];
+  float obj_side[NUM_SIDES], backlash[NUM_SIDES];
+  xyz_float_t pos_error;
 
-  float backlash[NUM_SIDES];
-  float pos_error[XYZ];
-
-  float nozzle_outer_dimension[2] = {CALIBRATION_NOZZLE_OUTER_DIAMETER, CALIBRATION_NOZZLE_OUTER_DIAMETER};
+  xy_float_t nozzle_outer_dimension = nod;
 };
 
 #define TEMPORARY_SOFT_ENDSTOP_STATE(enable) REMEMBER(tes, soft_endstops_enabled, enable);
@@ -88,29 +107,8 @@ struct measurements_t {
   #define TEMPORARY_BACKLASH_SMOOTHING(value)
 #endif
 
-/**
- * Move to a particular location. Up to three individual axes
- * and their destinations can be specified, in any order.
- */
-inline void move_to(
-  const AxisEnum a1 = NO_AXIS, const float p1 = 0,
-  const AxisEnum a2 = NO_AXIS, const float p2 = 0,
-  const AxisEnum a3 = NO_AXIS, const float p3 = 0
-) {
-  set_destination_from_current();
-
-  // Note: The order of p1, p2, p3 may not correspond to X, Y, Z
-  if (a1 != NO_AXIS) destination[a1] = p1;
-  if (a2 != NO_AXIS) destination[a2] = p2;
-  if (a3 != NO_AXIS) destination[a3] = p3;
-
-  // Make sure coordinates are within bounds
-  destination[X_AXIS] = _MAX(_MIN(destination[X_AXIS], X_MAX_POS), X_MIN_POS);
-  destination[Y_AXIS] = _MAX(_MIN(destination[Y_AXIS], Y_MAX_POS), Y_MIN_POS);
-  destination[Z_AXIS] = _MAX(_MIN(destination[Z_AXIS], Z_MAX_POS), Z_MIN_POS);
-
-  // Move to position
-  do_blocking_move_to(destination, MMM_TO_MMS(CALIBRATION_FEEDRATE_TRAVEL));
+inline void calibration_move() {
+  do_blocking_move_to(current_position, MMM_TO_MMS(CALIBRATION_FEEDRATE_TRAVEL));
 }
 
 /**
@@ -121,10 +119,12 @@ inline void move_to(
  */
 inline void park_above_object(measurements_t &m, const float uncertainty) {
   // Move to safe distance above calibration object
-  move_to(Z_AXIS, m.obj_center[Z_AXIS] + m.dimensions[Z_AXIS] / 2 + uncertainty);
+  current_position.z = m.obj_center.z + dimensions.z / 2 + uncertainty;
+  calibration_move();
 
   // Move to center of calibration object in XY
-  move_to(X_AXIS, m.obj_center[X_AXIS], Y_AXIS, m.obj_center[Y_AXIS]);
+  current_position = xy_pos_t(m.obj_center);
+  calibration_move();
 }
 
 #if HOTENDS > 1
@@ -139,26 +139,23 @@ inline void park_above_object(measurements_t &m, const float uncertainty) {
 #if HAS_HOTEND_OFFSET
 
   inline void normalize_hotend_offsets() {
-    for (uint8_t e = 1; e < HOTENDS; e++) {
-      hotend_offset[X_AXIS][e] -= hotend_offset[X_AXIS][0];
-      hotend_offset[Y_AXIS][e] -= hotend_offset[Y_AXIS][0];
-      hotend_offset[Z_AXIS][e] -= hotend_offset[Z_AXIS][0];
-    }
-    hotend_offset[X_AXIS][0] = 0;
-    hotend_offset[Y_AXIS][0] = 0;
-    hotend_offset[Z_AXIS][0] = 0;
+    LOOP_S_L_N(e, 1, HOTENDS)
+      hotend_offset[e] -= hotend_offset[0];
+    hotend_offset[0].reset();
   }
 
 #endif
 
 inline bool read_calibration_pin() {
-  #if HAS_CALIBRATION_PIN
-    return (READ(CALIBRATION_PIN) != CALIBRATION_PIN_INVERTING);
-  #elif ENABLED(Z_MIN_PROBE_USES_Z_MIN_ENDSTOP_PIN)
-    return (READ(Z_MIN_PIN) != Z_MIN_ENDSTOP_INVERTING);
-  #else
-    return (READ(Z_MIN_PROBE_PIN) != Z_MIN_PROBE_ENDSTOP_INVERTING);
-  #endif
+  return (
+    #if PIN_EXISTS(CALIBRATION)
+      READ(CALIBRATION_PIN) != CALIBRATION_PIN_INVERTING
+    #elif HAS_CUSTOM_PROBE_PIN
+      READ(Z_MIN_PROBE_PIN) != Z_MIN_PROBE_ENDSTOP_INVERTING
+    #else
+      READ(Z_MIN_PIN) != Z_MIN_ENDSTOP_INVERTING
+    #endif
+  );
 }
 
 /**
@@ -171,17 +168,16 @@ inline bool read_calibration_pin() {
  *   fast         in - Fast vs. precise measurement
  */
 float measuring_movement(const AxisEnum axis, const int dir, const bool stop_state, const bool fast) {
-  const float step  =            fast ? 0.25                      : CALIBRATION_MEASUREMENT_RESOLUTION;
-  const float mms   = MMM_TO_MMS(fast ? CALIBRATION_FEEDRATE_FAST : CALIBRATION_FEEDRATE_SLOW);
-  const float limit =            fast ? 50                        : 5;
+  const float step     = fast ? 0.25 : CALIBRATION_MEASUREMENT_RESOLUTION;
+  const feedRate_t mms = fast ? MMM_TO_MMS(CALIBRATION_FEEDRATE_FAST) : MMM_TO_MMS(CALIBRATION_FEEDRATE_SLOW);
+  const float limit    = fast ? 50 : 5;
 
-  set_destination_from_current();
+  destination = current_position;
   for (float travel = 0; travel < limit; travel += step) {
     destination[axis] += dir * step;
     do_blocking_move_to(destination, mms);
     planner.synchronize();
-    if (read_calibration_pin() == stop_state)
-      break;
+    if (read_calibration_pin() == stop_state) break;
   }
   return destination[axis];
 }
@@ -200,7 +196,7 @@ inline float measure(const AxisEnum axis, const int dir, const bool stop_state, 
   const bool fast = uncertainty == CALIBRATION_MEASUREMENT_UNKNOWN;
 
   // Save position
-  set_destination_from_current();
+  destination = current_position;
   const float start_pos = destination[axis];
   const float measured_pos = measuring_movement(axis, dir, stop_state, fast);
   // Measure backlash
@@ -224,42 +220,54 @@ inline float measure(const AxisEnum axis, const int dir, const bool stop_state, 
  *                               to find out height of edge
  */
 inline void probe_side(measurements_t &m, const float uncertainty, const side_t side, const bool probe_top_at_edge=false) {
-  const float dimensions[]  = CALIBRATION_OBJECT_DIMENSIONS;
+  const xyz_float_t dimensions = CALIBRATION_OBJECT_DIMENSIONS;
   AxisEnum axis;
-  float dir;
+  float dir = 1;
 
   park_above_object(m, uncertainty);
 
   switch (side) {
-    case TOP: {
-      const float measurement = measure(Z_AXIS, -1, true, &m.backlash[TOP], uncertainty);
-      m.obj_center[Z_AXIS] = measurement - dimensions[Z_AXIS] / 2;
-      m.obj_side[TOP] = measurement;
-      return;
-    }
-    case RIGHT: axis = X_AXIS; dir = -1; break;
-    case FRONT: axis = Y_AXIS; dir =  1; break;
-    case LEFT:  axis = X_AXIS; dir =  1; break;
-    case BACK:  axis = Y_AXIS; dir = -1; break;
-    default:
-      return;
+    #if AXIS_CAN_CALIBRATE(Z)
+      case TOP: {
+        const float measurement = measure(Z_AXIS, -1, true, &m.backlash[TOP], uncertainty);
+        m.obj_center.z = measurement - dimensions.z / 2;
+        m.obj_side[TOP] = measurement;
+        return;
+      }
+    #endif
+    #if AXIS_CAN_CALIBRATE(X)
+      case LEFT:  axis = X_AXIS; break;
+      case RIGHT: axis = X_AXIS; dir = -1; break;
+    #endif
+    #if AXIS_CAN_CALIBRATE(Y)
+      case FRONT: axis = Y_AXIS; break;
+      case BACK:  axis = Y_AXIS; dir = -1; break;
+    #endif
+    default: return;
   }
 
   if (probe_top_at_edge) {
-    // Probe top nearest the side we are probing
-    move_to(axis, m.obj_center[axis] + (-dir) * (dimensions[axis] / 2 - m.nozzle_outer_dimension[axis]));
-    m.obj_side[TOP] = measure(Z_AXIS, -1, true, &m.backlash[TOP], uncertainty);
-    m.obj_center[Z_AXIS] = m.obj_side[TOP] - dimensions[Z_AXIS] / 2;
+    #if AXIS_CAN_CALIBRATE(Z)
+      // Probe top nearest the side we are probing
+      current_position[axis] = m.obj_center[axis] + (-dir) * (dimensions[axis] / 2 - m.nozzle_outer_dimension[axis]);
+      calibration_move();
+      m.obj_side[TOP] = measure(Z_AXIS, -1, true, &m.backlash[TOP], uncertainty);
+      m.obj_center.z = m.obj_side[TOP] - dimensions.z / 2;
+    #endif
   }
 
-  // Move to safe distance to the side of the calibration object
-  move_to(axis, m.obj_center[axis] + (-dir) * (dimensions[axis] / 2 + m.nozzle_outer_dimension[axis] / 2 + uncertainty));
+  if (AXIS_CAN_CALIBRATE(X) && axis == X_AXIS || AXIS_CAN_CALIBRATE(Y) && axis == Y_AXIS) {
+    // Move to safe distance to the side of the calibration object
+    current_position[axis] = m.obj_center[axis] + (-dir) * (dimensions[axis] / 2 + m.nozzle_outer_dimension[axis] / 2 + uncertainty);
+    calibration_move();
 
-  // Plunge below the side of the calibration object and measure
-  move_to(Z_AXIS, m.obj_side[TOP] - CALIBRATION_NOZZLE_TIP_HEIGHT * 0.7);
-  const float measurement = measure(axis, dir, true, &m.backlash[side], uncertainty);
-  m.obj_center[axis] = measurement + dir * (dimensions[axis] / 2 + m.nozzle_outer_dimension[axis] / 2);
-  m.obj_side[side] = measurement;
+    // Plunge below the side of the calibration object and measure
+    current_position.z = m.obj_side[TOP] - (CALIBRATION_NOZZLE_TIP_HEIGHT) * 0.7f;
+    calibration_move();
+    const float measurement = measure(axis, dir, true, &m.backlash[side], uncertainty);
+    m.obj_center[axis] = measurement + dir * (dimensions[axis] / 2 + m.nozzle_outer_dimension[axis] / 2);
+    m.obj_side[side] = measurement;
+  }
 }
 
 /**
@@ -269,7 +277,7 @@ inline void probe_side(measurements_t &m, const float uncertainty, const side_t 
  *   uncertainty        in     - How far away from the calibration object to begin probing
  */
 inline void probe_sides(measurements_t &m, const float uncertainty) {
-  #ifdef CALIBRATION_MEASURE_AT_TOP_EDGES
+  #if ENABLED(CALIBRATION_MEASURE_AT_TOP_EDGES)
     constexpr bool probe_top_at_edge = true;
   #else
     // Probing at the exact center only works if the center is flat. Probing on a washer
@@ -278,61 +286,61 @@ inline void probe_sides(measurements_t &m, const float uncertainty) {
     probe_side(m, uncertainty, TOP);
   #endif
 
-  #ifdef CALIBRATION_MEASURE_RIGHT
+  #if ENABLED(CALIBRATION_MEASURE_RIGHT)
     probe_side(m, uncertainty, RIGHT, probe_top_at_edge);
   #endif
 
-  #ifdef CALIBRATION_MEASURE_FRONT
+  #if ENABLED(CALIBRATION_MEASURE_FRONT)
     probe_side(m, uncertainty, FRONT, probe_top_at_edge);
   #endif
 
-  #ifdef CALIBRATION_MEASURE_LEFT
+  #if ENABLED(CALIBRATION_MEASURE_LEFT)
     probe_side(m, uncertainty, LEFT,  probe_top_at_edge);
   #endif
-  #ifdef CALIBRATION_MEASURE_BACK
+  #if ENABLED(CALIBRATION_MEASURE_BACK)
     probe_side(m, uncertainty, BACK,  probe_top_at_edge);
   #endif
 
   // Compute the measured center of the calibration object.
   #if HAS_X_CENTER
-    m.obj_center[X_AXIS] = (m.obj_side[LEFT] + m.obj_side[RIGHT]) / 2;
+    m.obj_center.x = (m.obj_side[LEFT] + m.obj_side[RIGHT]) / 2;
   #endif
   #if HAS_Y_CENTER
-    m.obj_center[Y_AXIS] = (m.obj_side[FRONT] + m.obj_side[BACK]) / 2;
+    m.obj_center.y = (m.obj_side[FRONT] + m.obj_side[BACK]) / 2;
   #endif
 
   // Compute the outside diameter of the nozzle at the height
   // at which it makes contact with the calibration object
   #if HAS_X_CENTER
-    m.nozzle_outer_dimension[X_AXIS] = m.obj_side[RIGHT] - m.obj_side[LEFT] - m.dimensions[X_AXIS];
+    m.nozzle_outer_dimension.x = m.obj_side[RIGHT] - m.obj_side[LEFT] - dimensions.x;
   #endif
   #if HAS_Y_CENTER
-    m.nozzle_outer_dimension[Y_AXIS] = m.obj_side[BACK]  - m.obj_side[FRONT] - m.dimensions[Y_AXIS];
+    m.nozzle_outer_dimension.y = m.obj_side[BACK]  - m.obj_side[FRONT] - dimensions.y;
   #endif
 
   park_above_object(m, uncertainty);
 
   // The difference between the known and the measured location
   // of the calibration object is the positional error
-  m.pos_error[X_AXIS] =
-  #if HAS_X_CENTER
-    m.true_center[X_AXIS] - m.obj_center[X_AXIS];
-  #else
-    0;
-  #endif
-  m.pos_error[Y_AXIS] =
-  #if HAS_Y_CENTER
-    m.true_center[Y_AXIS] - m.obj_center[Y_AXIS];
-  #else
-    0;
-  #endif
-  m.pos_error[Z_AXIS] = m.true_center[Z_AXIS] - m.obj_center[Z_AXIS];
+  m.pos_error.x = (0
+    #if HAS_X_CENTER
+      + true_center.x - m.obj_center.x
+    #endif
+  );
+  m.pos_error.y = (0
+    #if HAS_Y_CENTER
+      + true_center.y - m.obj_center.y
+    #endif
+  );
+  m.pos_error.z = true_center.z - m.obj_center.z;
 }
 
 #if ENABLED(CALIBRATION_REPORTING)
   inline void report_measured_faces(const measurements_t &m) {
     SERIAL_ECHOLNPGM("Sides:");
-    SERIAL_ECHOLNPAIR("  Top: ", m.obj_side[TOP]);
+    #if AXIS_CAN_CALIBRATE(Z)
+      SERIAL_ECHOLNPAIR("  Top: ", m.obj_side[TOP]);
+    #endif
     #if ENABLED(CALIBRATION_MEASURE_LEFT)
       SERIAL_ECHOLNPAIR("  Left: ", m.obj_side[LEFT]);
     #endif
@@ -351,30 +359,36 @@ inline void probe_sides(measurements_t &m, const float uncertainty) {
   inline void report_measured_center(const measurements_t &m) {
     SERIAL_ECHOLNPGM("Center:");
     #if HAS_X_CENTER
-      SERIAL_ECHOLNPAIR(" X", m.obj_center[X_AXIS]);
+      SERIAL_ECHOLNPAIR_P(SP_X_STR, m.obj_center.x);
     #endif
     #if HAS_Y_CENTER
-      SERIAL_ECHOLNPAIR(" Y", m.obj_center[Y_AXIS]);
+      SERIAL_ECHOLNPAIR_P(SP_Y_STR, m.obj_center.y);
     #endif
-    SERIAL_ECHOLNPAIR(" Z", m.obj_center[Z_AXIS]);
+    SERIAL_ECHOLNPAIR_P(SP_Z_STR, m.obj_center.z);
     SERIAL_EOL();
   }
 
   inline void report_measured_backlash(const measurements_t &m) {
     SERIAL_ECHOLNPGM("Backlash:");
-    #if ENABLED(CALIBRATION_MEASURE_LEFT)
-      SERIAL_ECHOLNPAIR("  Left: ", m.backlash[LEFT]);
+    #if AXIS_CAN_CALIBRATE(X)
+      #if ENABLED(CALIBRATION_MEASURE_LEFT)
+        SERIAL_ECHOLNPAIR("  Left: ", m.backlash[LEFT]);
+      #endif
+      #if ENABLED(CALIBRATION_MEASURE_RIGHT)
+        SERIAL_ECHOLNPAIR("  Right: ", m.backlash[RIGHT]);
+      #endif
     #endif
-    #if ENABLED(CALIBRATION_MEASURE_RIGHT)
-      SERIAL_ECHOLNPAIR("  Right: ", m.backlash[RIGHT]);
+    #if AXIS_CAN_CALIBRATE(Y)
+      #if ENABLED(CALIBRATION_MEASURE_FRONT)
+        SERIAL_ECHOLNPAIR("  Front: ", m.backlash[FRONT]);
+      #endif
+      #if ENABLED(CALIBRATION_MEASURE_BACK)
+        SERIAL_ECHOLNPAIR("  Back: ", m.backlash[BACK]);
+      #endif
     #endif
-    #if ENABLED(CALIBRATION_MEASURE_FRONT)
-      SERIAL_ECHOLNPAIR("  Front: ", m.backlash[FRONT]);
+    #if AXIS_CAN_CALIBRATE(Z)
+      SERIAL_ECHOLNPAIR("  Top: ", m.backlash[TOP]);
     #endif
-    #if ENABLED(CALIBRATION_MEASURE_BACK)
-      SERIAL_ECHOLNPAIR("  Back: ", m.backlash[BACK]);
-    #endif
-    SERIAL_ECHOLNPAIR("  Top: ", m.backlash[TOP]);
     SERIAL_EOL();
   }
 
@@ -383,24 +397,24 @@ inline void probe_sides(measurements_t &m, const float uncertainty) {
     SERIAL_ECHO(int(active_extruder));
     SERIAL_ECHOLNPGM(" Positional Error:");
     #if HAS_X_CENTER
-      SERIAL_ECHOLNPAIR(" X", m.pos_error[X_AXIS]);
+      SERIAL_ECHOLNPAIR_P(SP_X_STR, m.pos_error.x);
     #endif
     #if HAS_Y_CENTER
-      SERIAL_ECHOLNPAIR(" Y", m.pos_error[Y_AXIS]);
+      SERIAL_ECHOLNPAIR_P(SP_Y_STR, m.pos_error.y);
     #endif
-    SERIAL_ECHOLNPAIR(" Z", m.pos_error[Z_AXIS]);
+    if (AXIS_CAN_CALIBRATE(Z)) SERIAL_ECHOLNPAIR_P(SP_Z_STR, m.pos_error.z);
     SERIAL_EOL();
   }
 
   inline void report_measured_nozzle_dimensions(const measurements_t &m) {
     SERIAL_ECHOLNPGM("Nozzle Tip Outer Dimensions:");
-    #if HAS_X_CENTER
-      SERIAL_ECHOLNPAIR(" X", m.nozzle_outer_dimension[X_AXIS]);
-    #else
-      UNUSED(m);
-    #endif
-    #if HAS_Y_CENTER
-      SERIAL_ECHOLNPAIR(" Y", m.nozzle_outer_dimension[Y_AXIS]);
+    #if HAS_X_CENTER || HAS_Y_CENTER
+      #if HAS_X_CENTER
+        SERIAL_ECHOLNPAIR_P(SP_X_STR, m.nozzle_outer_dimension.x);
+      #endif
+      #if HAS_Y_CENTER
+        SERIAL_ECHOLNPAIR_P(SP_Y_STR, m.nozzle_outer_dimension.y);
+      #endif
     #else
       UNUSED(m);
     #endif
@@ -412,16 +426,11 @@ inline void probe_sides(measurements_t &m, const float uncertainty) {
     // This function requires normalize_hotend_offsets() to be called
     //
     inline void report_hotend_offsets() {
-      for (uint8_t e = 1; e < HOTENDS; e++) {
-        SERIAL_ECHOPAIR("T", int(e));
-        SERIAL_ECHOLNPGM(" Hotend Offset:");
-        SERIAL_ECHOLNPAIR("  X: ", hotend_offset[X_AXIS][e]);
-        SERIAL_ECHOLNPAIR("  Y: ", hotend_offset[Y_AXIS][e]);
-        SERIAL_ECHOLNPAIR("  Z: ", hotend_offset[Z_AXIS][e]);
-        SERIAL_EOL();
-      }
+      LOOP_S_L_N(e, 1, HOTENDS)
+        SERIAL_ECHOLNPAIR_P(PSTR("T"), int(e), PSTR(" Hotend Offset X"), hotend_offset[e].x, SP_Y_STR, hotend_offset[e].y, SP_Z_STR, hotend_offset[e].z);
     }
   #endif
+
 #endif // CALIBRATION_REPORTING
 
 /**
@@ -441,50 +450,42 @@ inline void calibrate_backlash(measurements_t &m, const float uncertainty) {
     probe_sides(m, uncertainty);
 
     #if ENABLED(BACKLASH_GCODE)
+
       #if HAS_X_CENTER
-        backlash.distance_mm[X_AXIS] = (m.backlash[LEFT] + m.backlash[RIGHT]) / 2;
+        backlash.distance_mm.x = (m.backlash[LEFT] + m.backlash[RIGHT]) / 2;
       #elif ENABLED(CALIBRATION_MEASURE_LEFT)
-        backlash.distance_mm[X_AXIS] = m.backlash[LEFT];
+        backlash.distance_mm.x = m.backlash[LEFT];
       #elif ENABLED(CALIBRATION_MEASURE_RIGHT)
-        backlash.distance_mm[X_AXIS] = m.backlash[RIGHT];
+        backlash.distance_mm.x = m.backlash[RIGHT];
       #endif
 
       #if HAS_Y_CENTER
-        backlash.distance_mm[Y_AXIS] = (m.backlash[FRONT] + m.backlash[BACK]) / 2;
+        backlash.distance_mm.y = (m.backlash[FRONT] + m.backlash[BACK]) / 2;
       #elif ENABLED(CALIBRATION_MEASURE_FRONT)
-        backlash.distance_mm[Y_AXIS] = m.backlash[FRONT];
+        backlash.distance_mm.y = m.backlash[FRONT];
       #elif ENABLED(CALIBRATION_MEASURE_BACK)
-        backlash.distance_mm[Y_AXIS] = m.backlash[BACK];
+        backlash.distance_mm.y = m.backlash[BACK];
       #endif
 
-      backlash.distance_mm[Z_AXIS] = m.backlash[TOP];
+      if (AXIS_CAN_CALIBRATE(Z)) backlash.distance_mm.z = m.backlash[TOP];
     #endif
   }
 
   #if ENABLED(BACKLASH_GCODE)
     // Turn on backlash compensation and move in all
-    // directions to take up any backlash
-
+    // allowed directions to take up any backlash
     {
       // New scope for TEMPORARY_BACKLASH_CORRECTION
       TEMPORARY_BACKLASH_CORRECTION(all_on);
       TEMPORARY_BACKLASH_SMOOTHING(0.0f);
-      move_to(
-        X_AXIS, current_position[X_AXIS] + 3,
-        Y_AXIS, current_position[Y_AXIS] + 3,
-        Z_AXIS, current_position[Z_AXIS] + 3
-      );
-      move_to(
-        X_AXIS, current_position[X_AXIS] - 3,
-        Y_AXIS, current_position[Y_AXIS] - 3,
-        Z_AXIS, current_position[Z_AXIS] - 3
-      );
+      const xyz_float_t move = { AXIS_CAN_CALIBRATE(X) * 3, AXIS_CAN_CALIBRATE(Y) * 3, AXIS_CAN_CALIBRATE(Z) * 3 };
+      current_position += move; calibration_move();
+      current_position -= move; calibration_move();
     }
   #endif
 }
 
 inline void update_measurements(measurements_t &m, const AxisEnum axis) {
-  const float true_center[XYZ] = CALIBRATION_OBJECT_CENTER;
   current_position[axis] += m.pos_error[axis];
   m.obj_center[axis] = true_center[axis];
   m.pos_error[axis] = 0;
@@ -515,26 +516,18 @@ inline void calibrate_toolhead(measurements_t &m, const float uncertainty, const
 
   // Adjust the hotend offset
   #if HAS_HOTEND_OFFSET
-    #if HAS_X_CENTER
-      hotend_offset[X_AXIS][extruder] += m.pos_error[X_AXIS];
-    #endif
-    #if HAS_Y_CENTER
-      hotend_offset[Y_AXIS][extruder] += m.pos_error[Y_AXIS];
-    #endif
-    hotend_offset[Z_AXIS][extruder] += m.pos_error[Z_AXIS];
+    if (ENABLED(HAS_X_CENTER) && AXIS_CAN_CALIBRATE(X)) hotend_offset[extruder].x += m.pos_error.x;
+    if (ENABLED(HAS_Y_CENTER) && AXIS_CAN_CALIBRATE(Y)) hotend_offset[extruder].y += m.pos_error.y;
+                             if (AXIS_CAN_CALIBRATE(Z)) hotend_offset[extruder].z += m.pos_error.z;
     normalize_hotend_offsets();
   #endif
 
   // Correct for positional error, so the object
   // is at the known actual spot
   planner.synchronize();
-  #if HAS_X_CENTER
-    update_measurements(m, X_AXIS);
-  #endif
-  #if HAS_Y_CENTER
-    update_measurements(m, Y_AXIS);
-  #endif
-  update_measurements(m, Z_AXIS);
+  if (ENABLED(HAS_X_CENTER) && AXIS_CAN_CALIBRATE(X)) update_measurements(m, X_AXIS);
+  if (ENABLED(HAS_Y_CENTER) && AXIS_CAN_CALIBRATE(Y)) update_measurements(m, Y_AXIS);
+                           if (AXIS_CAN_CALIBRATE(Z)) update_measurements(m, Z_AXIS);
 
   sync_plan_position();
 }
@@ -597,7 +590,8 @@ inline void calibrate_all() {
   // Do a slow and precise calibration of the toolheads
   calibrate_all_toolheads(m, CALIBRATION_MEASUREMENT_UNCERTAIN);
 
-  move_to(X_AXIS, 150); // Park nozzle away from calibration object
+  current_position.x = X_CENTER;
+  calibration_move();         // Park nozzle away from calibration object
 }
 
 /**

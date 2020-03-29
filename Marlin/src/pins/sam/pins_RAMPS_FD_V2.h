@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2020 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
@@ -28,7 +28,7 @@
  * Use 1k thermistor tables
  */
 
-#define BOARD_NAME "RAMPS-FD v2"
+#define BOARD_INFO_NAME "RAMPS-FD v2"
 
 #ifndef E0_CS_PIN
   #define E0_CS_PIN        69 // moved from A13 to A15 on v2.2, if not earlier

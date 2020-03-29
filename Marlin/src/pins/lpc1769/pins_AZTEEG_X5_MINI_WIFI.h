@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2020 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
@@ -25,11 +25,17 @@
  * Azteeg X5 MINI pin assignments
  */
 
-#ifndef LPC1769
+#ifndef MCU_LPC1769
   #error "Oops! Make sure you have the LPC1769 environment selected in your IDE."
 #endif
 
-#define BOARD_NAME "Azteeg X5 MINI WIFI"
+#define BOARD_INFO_NAME "Azteeg X5 MINI WIFI"
+
+//
+// EEPROM
+//
+#define FLASH_EEPROM_EMULATION
+//#define SDCARD_EEPROM_EMULATION
 
 //
 // DIGIPOT slave addresses

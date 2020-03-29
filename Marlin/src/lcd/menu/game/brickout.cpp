@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2020 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
@@ -140,13 +140,13 @@ void BrickoutGame::game_screen() {
 
   // Draw bricks
   if (PAGE_CONTAINS(BRICK_TOP, BRICK_BOT)) {
-    for (uint8_t y = 0; y < BRICK_ROWS; ++y) {
+    LOOP_L_N(y, BRICK_ROWS) {
       const uint8_t yy = y * BRICK_H + BRICK_TOP;
       if (PAGE_CONTAINS(yy, yy + BRICK_H - 1)) {
-        for (uint8_t x = 0; x < BRICK_COLS; ++x) {
+        LOOP_L_N(x, BRICK_COLS) {
           if (TEST(bdat.bricks[y], x)) {
             const uint8_t xx = x * BRICK_W;
-            for (uint8_t v = 0; v < BRICK_H - 1; ++v)
+            LOOP_L_N(v, BRICK_H - 1)
               if (PAGE_CONTAINS(yy + v, yy + v))
                 u8g.drawHLine(xx, yy + v, BRICK_W - 1);
           }
@@ -180,8 +180,7 @@ void BrickoutGame::game_screen() {
     // Score Digits
     //const uint8_t sx = (LCD_PIXEL_WIDTH - (score >= 10 ? score >= 100 ? score >= 1000 ? 4 : 3 : 2 : 1) * MENU_FONT_WIDTH) / 2;
     constexpr uint8_t sx = 0;
-    lcd_moveto(sx, MENU_FONT_ASCENT - 1);
-    lcd_put_int(score);
+    lcd_put_int(sx, MENU_FONT_ASCENT - 1, score);
 
     // Balls Left
     lcd_moveto(LCD_PIXEL_WIDTH - MENU_FONT_WIDTH * 3, MENU_FONT_ASCENT - 1);

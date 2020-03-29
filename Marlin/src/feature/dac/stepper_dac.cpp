@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2020 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
@@ -31,8 +31,8 @@
 #include "stepper_dac.h"
 
 bool dac_present = false;
-const uint8_t dac_order[NUM_AXIS] = DAC_STEPPER_ORDER;
-uint8_t dac_channel_pct[XYZE] = DAC_MOTOR_CURRENT_DEFAULT;
+constexpr xyze_uint8_t dac_order = DAC_STEPPER_ORDER;
+xyze_uint8_t dac_channel_pct = DAC_MOTOR_CURRENT_DEFAULT;
 
 int dac_init() {
   #if PIN_EXISTS(DAC_DISABLE)
@@ -68,17 +68,17 @@ void dac_current_percent(uint8_t channel, float val) {
 void dac_current_raw(uint8_t channel, uint16_t val) {
   if (!dac_present) return;
 
-  NOMORE(val, DAC_STEPPER_MAX);
+  NOMORE(val, uint16_t(DAC_STEPPER_MAX));
 
   mcp4728_analogWrite(dac_order[channel], val);
   mcp4728_simpleCommand(UPDATE);
 }
 
-static float dac_perc(int8_t n) { return 100.0 * mcp4728_getValue(dac_order[n]) * (1.0f / (DAC_STEPPER_MAX)); }
-static float dac_amps(int8_t n) { return mcp4728_getDrvPct(dac_order[n]) * (DAC_STEPPER_MAX) * 0.125 * (1.0f / (DAC_STEPPER_SENSE)); }
+static float dac_perc(int8_t n) { return 100.0 * mcp4728_getValue(dac_order[n]) * RECIPROCAL(DAC_STEPPER_MAX); }
+static float dac_amps(int8_t n) { return mcp4728_getDrvPct(dac_order[n]) * (DAC_STEPPER_MAX) * 0.125 * RECIPROCAL(DAC_STEPPER_SENSE); }
 
-uint8_t dac_current_get_percent(AxisEnum axis) { return mcp4728_getDrvPct(dac_order[axis]); }
-void dac_current_set_percents(const uint8_t pct[XYZE]) {
+uint8_t dac_current_get_percent(const AxisEnum axis) { return mcp4728_getDrvPct(dac_order[axis]); }
+void dac_current_set_percents(xyze_uint8_t &pct) {
   LOOP_XYZE(i) dac_channel_pct[i] = pct[dac_order[i]];
   mcp4728_setDrvPct(dac_channel_pct);
 }
@@ -88,11 +88,11 @@ void dac_print_values() {
 
   SERIAL_ECHO_MSG("Stepper current values in % (Amps):");
   SERIAL_ECHO_START();
-  SERIAL_ECHOLNPAIR(
-    " X:", dac_perc(X_AXIS), " (", dac_amps(X_AXIS), ")"
-    " Y:", dac_perc(Y_AXIS), " (", dac_amps(Y_AXIS), ")"
-    " Z:", dac_perc(Z_AXIS), " (", dac_amps(Z_AXIS), ")"
-    " E:", dac_perc(E_AXIS), " (", dac_amps(E_AXIS), ")"
+  SERIAL_ECHOLNPAIR_P(
+    SP_X_LBL, dac_perc(X_AXIS), PSTR(" ("), dac_amps(X_AXIS), PSTR(")")
+    SP_Y_LBL, dac_perc(Y_AXIS), PSTR(" ("), dac_amps(Y_AXIS), PSTR(")")
+    SP_Z_LBL, dac_perc(Z_AXIS), PSTR(" ("), dac_amps(Z_AXIS), PSTR(")")
+    SP_E_LBL, dac_perc(E_AXIS), PSTR(" ("), dac_amps(E_AXIS), PSTR(")")
   );
 }
 

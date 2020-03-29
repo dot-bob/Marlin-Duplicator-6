@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2020 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
@@ -25,7 +25,7 @@
 #if ENABLED(PINS_DEBUGGING)
 
 #include "../gcode.h"
-#include "../../Marlin.h" // for pin_is_protected
+#include "../../MarlinCore.h" // for pin_is_protected
 #include "../../pins/pinsDebug.h"
 #include "../../module/endstops.h"
 
@@ -42,6 +42,10 @@
   #include "../../feature/host_actions.h"
 #endif
 
+#if ENABLED(EXTENSIBLE_UI)
+  #include "../../lcd/extui/ui_api.h"
+#endif
+
 #ifndef GET_PIN_MAP_PIN_M43
   #define GET_PIN_MAP_PIN_M43(Q) GET_PIN_MAP_PIN(Q)
 #endif
@@ -53,16 +57,17 @@ inline void toggle_pins() {
             end = PARSED_PIN_INDEX('L', NUM_DIGITAL_PINS - 1),
             wait = parser.intval('W', 500);
 
-  for (uint8_t i = start; i <= end; i++) {
+  LOOP_S_LE_N(i, start, end) {
     pin_t pin = GET_PIN_MAP_PIN_M43(i);
     if (!VALID_PIN(pin)) continue;
     if (M43_NEVER_TOUCH(i) || (!ignore_protection && pin_is_protected(pin))) {
-      report_pin_state_extended(pin, ignore_protection, true, "Untouched ");
+      report_pin_state_extended(pin, ignore_protection, true, PSTR("Untouched "));
       SERIAL_EOL();
     }
     else {
-      watchdog_reset();
-      report_pin_state_extended(pin, ignore_protection, true, "Pulsing   ");
+      watchdog_refresh();
+      report_pin_state_extended(pin, ignore_protection, true, PSTR("Pulsing   "));
+      const bool prior_mode = GET_PINMODE(pin);
       #if AVR_AT90USB1286_FAMILY // Teensy IDEs don't know about these pins so must use FASTIO
         if (pin == TEENSY_E2) {
           SET_OUTPUT(TEENSY_E2);
@@ -85,12 +90,13 @@ inline void toggle_pins() {
       {
         pinMode(pin, OUTPUT);
         for (int16_t j = 0; j < repeat; j++) {
-          watchdog_reset(); extDigitalWrite(pin, 0); safe_delay(wait);
-          watchdog_reset(); extDigitalWrite(pin, 1); safe_delay(wait);
-          watchdog_reset(); extDigitalWrite(pin, 0); safe_delay(wait);
-          watchdog_reset();
+          watchdog_refresh(); extDigitalWrite(pin, 0); safe_delay(wait);
+          watchdog_refresh(); extDigitalWrite(pin, 1); safe_delay(wait);
+          watchdog_refresh(); extDigitalWrite(pin, 0); safe_delay(wait);
+          watchdog_refresh();
         }
       }
+      pinMode(pin, prior_mode);
     }
     SERIAL_EOL();
   }
@@ -309,7 +315,7 @@ void GcodeSuite::M43() {
       NOLESS(first_pin, 2); // Don't hijack the UART pins
     #endif
     uint8_t pin_state[last_pin - first_pin + 1];
-    for (uint8_t i = first_pin; i <= last_pin; i++) {
+    LOOP_S_LE_N(i, first_pin, last_pin) {
       pin_t pin = GET_PIN_MAP_PIN_M43(i);
       if (!VALID_PIN(pin)) continue;
       if (M43_NEVER_TOUCH(i) || (!ignore_protection && pin_is_protected(pin))) continue;
@@ -327,12 +333,15 @@ void GcodeSuite::M43() {
       KEEPALIVE_STATE(PAUSED_FOR_USER);
       wait_for_user = true;
       #if ENABLED(HOST_PROMPT_SUPPORT)
-        host_prompt_do(PROMPT_USER_CONTINUE, PSTR("M43 Wait Called"), PSTR("Continue"));
+        host_prompt_do(PROMPT_USER_CONTINUE, PSTR("M43 Wait Called"), CONTINUE_STR);
+      #endif
+      #if ENABLED(EXTENSIBLE_UI)
+        ExtUI::onUserConfirmRequired_P(PSTR("M43 Wait Called"));
       #endif
     #endif
 
     for (;;) {
-      for (uint8_t i = first_pin; i <= last_pin; i++) {
+      LOOP_S_LE_N(i, first_pin, last_pin) {
         pin_t pin = GET_PIN_MAP_PIN_M43(i);
         if (!VALID_PIN(pin)) continue;
         if (M43_NEVER_TOUCH(i) || (!ignore_protection && pin_is_protected(pin))) continue;
@@ -358,7 +367,7 @@ void GcodeSuite::M43() {
   }
   else {
     // Report current state of selected pin(s)
-    for (uint8_t i = first_pin; i <= last_pin; i++) {
+    LOOP_S_LE_N(i, first_pin, last_pin) {
       pin_t pin = GET_PIN_MAP_PIN_M43(i);
       if (VALID_PIN(pin)) report_pin_state_extended(pin, ignore_protection, true);
     }

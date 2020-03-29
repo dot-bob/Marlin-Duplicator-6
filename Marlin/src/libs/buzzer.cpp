@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2020 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
@@ -22,13 +22,13 @@
 
 #include "../inc/MarlinConfig.h"
 
-#if DISABLED(LCD_USE_I2C_BUZZER) && PIN_EXISTS(BEEPER)
+#if USE_BEEPER
 
 #include "buzzer.h"
 #include "../module/temperature.h"
 
 #if ENABLED(EXTENSIBLE_UI)
-  #include "../lcd/extensible_ui/ui_api.h"
+  #include "../lcd/extui/ui_api.h"
 #endif
 
 Buzzer::state_t Buzzer::state;
@@ -63,13 +63,13 @@ void Buzzer::tick() {
 
     if (state.tone.frequency > 0) {
       #if ENABLED(EXTENSIBLE_UI)
-        CRITICAL_SECTION_START;
+        CRITICAL_SECTION_START();
         ExtUI::onPlayTone(state.tone.frequency, state.tone.duration);
-        CRITICAL_SECTION_END;
+        CRITICAL_SECTION_END();
       #elif ENABLED(SPEAKER)
-        CRITICAL_SECTION_START;
+        CRITICAL_SECTION_START();
         ::tone(BEEPER_PIN, state.tone.frequency, state.tone.duration);
-        CRITICAL_SECTION_END;
+        CRITICAL_SECTION_END();
       #else
         on();
       #endif
@@ -78,4 +78,4 @@ void Buzzer::tick() {
   else if (ELAPSED(now, state.endtime)) reset();
 }
 
-#endif // !LCD_USE_I2C_BUZZER && BEEPER
+#endif // USE_BEEPER

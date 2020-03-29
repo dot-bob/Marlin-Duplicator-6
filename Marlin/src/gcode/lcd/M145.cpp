@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2020 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
@@ -22,7 +22,7 @@
 
 #include "../../inc/MarlinConfig.h"
 
-#if HAS_LCD_MENU
+#if HOTENDS && HAS_LCD_MENU
 
 #include "../gcode.h"
 #include "../../lcd/ultralcd.h"
@@ -38,7 +38,7 @@
 void GcodeSuite::M145() {
   const uint8_t material = (uint8_t)parser.intval('S');
   if (material >= COUNT(ui.preheat_hotend_temp))
-    SERIAL_ERROR_MSG(MSG_ERR_MATERIAL_INDEX);
+    SERIAL_ERROR_MSG(STR_ERR_MATERIAL_INDEX);
   else {
     int v;
     if (parser.seenval('H')) {
@@ -58,4 +58,4 @@ void GcodeSuite::M145() {
   }
 }
 
-#endif // HAS_LCD_MENU
+#endif // HOTENDS && HAS_LCD_MENU

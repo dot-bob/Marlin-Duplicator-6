@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2020 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
@@ -35,6 +35,10 @@
   #include "../../../lcd/ultralcd.h"
 #endif
 
+#if ENABLED(POWER_LOSS_RECOVERY)
+  #include "../../../feature/powerloss.h"
+#endif
+
 /**
  * M125: Store current position and move to parking position.
  *       Called on pause (by M25) to prevent material leaking onto the
@@ -58,7 +62,7 @@ void GcodeSuite::M125() {
     #endif
   );
 
-  point_t park_point = NOZZLE_PARK_POINT;
+  xyz_pos_t park_point = NOZZLE_PARK_POINT;
 
   // Move XY axes to filament change position or given position
   if (parser.seenval('X')) park_point.x = RAW_X_POSITION(parser.linearval('X'));
@@ -68,8 +72,7 @@ void GcodeSuite::M125() {
   if (parser.seenval('Z')) park_point.z = parser.linearval('Z');
 
   #if HAS_HOTEND_OFFSET && NONE(DUAL_X_CARRIAGE, DELTA)
-    park_point.x += hotend_offset[X_AXIS][active_extruder];
-    park_point.y += hotend_offset[Y_AXIS][active_extruder];
+    park_point += hotend_offset[active_extruder];
   #endif
 
   #if ENABLED(SDSUPPORT)
@@ -86,6 +89,9 @@ void GcodeSuite::M125() {
   #endif
 
   if (pause_print(retract, park_point, 0, show_lcd)) {
+    #if ENABLED(POWER_LOSS_RECOVERY)
+      if (recovery.enabled) recovery.save(true);
+    #endif
     if (!sd_printing || show_lcd) {
       wait_for_confirmation(false, 0);
       resume_print(0, 0, PAUSE_PARK_RETRACT_LENGTH, 0);

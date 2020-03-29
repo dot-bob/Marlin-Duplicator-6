@@ -1,6 +1,6 @@
 /**
  * Marlin 3D Printer Firmware
- * Copyright (c) 2019 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
+ * Copyright (c) 2020 MarlinFirmware [https://github.com/MarlinFirmware/Marlin]
  *
  * Based on Sprinter and grbl.
  * Copyright (c) 2011 Camiel Gubbels / Erik van der Zalm
@@ -125,7 +125,7 @@ void LEDLights::set_color(const LEDColor &incol
     // If the pins can do PWM then their intensity will be set.
     #define UPDATE_RGBW(C,c) do { if (PWM_PIN(RGB_LED_##C##_PIN)) \
         analogWrite(pin_t(RGB_LED_##C##_PIN), incol.c); \
-      else WRITE(RGB_LED_##C##_PIN, incol.c ? HIGH : LOW); } while(0)
+      else WRITE(RGB_LED_##C##_PIN, incol.c ? HIGH : LOW); }while(0)
     UPDATE_RGBW(R,r);
     UPDATE_RGBW(G,g);
     UPDATE_RGBW(B,b);
